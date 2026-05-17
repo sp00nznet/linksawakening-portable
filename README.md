@@ -18,10 +18,11 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Phases 0 and 1 done — `rom.exe` (24.09 MB) builds from this tree
-> and matches the upstream `la-dx-recompiled` binary the user runs. CGB mode
-> verified (KEY1 register access in trace). Phase 2 (PAL audit) next. Xbox 360
-> backend not yet started.
+> **Status:** Phases 0, 1, and 2 done. `rom.exe` (25.26 MB) builds from this
+> tree, matches the upstream binary, and the PAL contract has been audited
+> (see [docs/PAL_AUDIT.md](docs/PAL_AUDIT.md)). The core engine is platform-clean;
+> remaining escapes are concentrated in debug UI + multiplayer overlays and
+> can be stubbed/gated per-target. Phase 3 (endianness audit) next.
 
 ---
 
@@ -54,15 +55,16 @@ toolchain file (added in Phase 4).
 
 | # | Phase                                  | Deliverable                                                          | Status      |
 | - | -------------------------------------- | -------------------------------------------------------------------- | ----------- |
-| 0 | Repo scaffold                          | Private GH repo + working tree, README, .gitignore, CMakeLists       | **done**    |
-| 1 | Windows reference build from new tree  | `rom.exe` builds & matches upstream behavior                         | **done**    |
-| 2 | Audit PAL contract; document gaps      | Inventory the 13 `gb_platform_*` calls + any escapes from contract   | next        |
-| 3 | Endianness + 32-bit audit              | Big-endian-safe; ROM-derived arrays use byte accessors only          | pending     |
-| 4 | Xbox 360 toolchain                     | devkitPPC + libxenon installed; CMake toolchain file; hello-world XEX boots Xenia | pending |
-| 5 | `platform_libxenon.cpp`                | Xenos framebuffer, USB gamepad, audio out, fs; full gb_platform_* contract | pending |
-| 6 | rom_main.c multiplayer guard           | Wrap `mp_session_is_client_connected()` etc. in `#ifdef LA_HAS_MULTIPLAYER` so `LA_MULTIPLAYER=OFF` builds work | pending |
-| 7 | Iterate to playable in Xenia           | Boot + title screen + intro rendering correctly                      | pending     |
-| 8 | Additional backends                    | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS          | pending     |
+| 0  | Repo scaffold                              | Private GH repo + working tree, README, .gitignore, CMakeLists       | **done**   |
+| 1  | Windows reference build from new tree      | `rom.exe` builds & matches upstream behavior                         | **done**   |
+| 2  | Audit PAL contract; document gaps          | docs/PAL_AUDIT.md catalogues every direct SDL/ImGui/stdio call       | **done**   |
+| 3  | Endianness + 32-bit audit                  | Big-endian-safe; ROM-derived arrays use byte accessors only          | next       |
+| 4  | Xbox 360 toolchain                         | devkitPPC + libxenon installed; CMake toolchain file; hello-world XEX boots Xenia | pending |
+| 5a | Upstream MP + ImGui gating patches         | Add `#ifdef LA_HAS_MULTIPLAYER` and `#ifdef LA_HAS_IMGUI` guards in `platform_sdl.cpp` + `menu_gui.cpp` so the 360 build can drop both | pending |
+| 5  | `platform_libxenon.cpp`                    | 13 `gb_platform_*` + `GBPlatformCallbacks` registration; Xenos framebuffer, USB gamepad, audio, fs | pending |
+| 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so menu_gui + mp_menu can persist `bindings.cfg` on non-stdio targets | pending |
+| 7  | Iterate to playable in Xenia               | Boot + title screen + intro rendering correctly                      | pending    |
+| 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS          | pending    |
 
 Phase 2 in the original plan was "extract a PAL." That work was already done
 by upstream — `platform_sdl.h` is the PAL. The current Phase 2 is just an audit
