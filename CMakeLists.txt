@@ -70,6 +70,7 @@ if(LA_MULTIPLAYER)
         ${GBRT_DIR}/src/multiplayer/mp_trade.cpp
         ${GBRT_DIR}/src/multiplayer/mp_voice.cpp
         ${GBRT_DIR}/src/multiplayer/mp_pvp.cpp
+        ${GBRT_DIR}/src/multiplayer/mp_sprites.cpp
     )
     target_compile_definitions(gbrt PUBLIC LA_HAS_MULTIPLAYER)
 endif()
