@@ -89,14 +89,9 @@ enet_packet_resize (ENetPacket * packet, size_t dataLength)
     if (newData == NULL)
       return -1;
 
-    if (packet -> data != NULL)
-    {
-       if (packet -> dataLength > 0)
-         memcpy (newData, packet -> data, packet -> dataLength);
-
-       enet_free (packet -> data);
-    }
-
+    memcpy (newData, packet -> data, packet -> dataLength);
+    enet_free (packet -> data);
+    
     packet -> data = newData;
     packet -> dataLength = dataLength;
 
