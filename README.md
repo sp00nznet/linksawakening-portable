@@ -18,11 +18,14 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Phases 0, 1, and 2 done. `rom.exe` (25.26 MB) builds from this
-> tree, matches the upstream binary, and the PAL contract has been audited
-> (see [docs/PAL_AUDIT.md](docs/PAL_AUDIT.md)). The core engine is platform-clean;
-> remaining escapes are concentrated in debug UI + multiplayer overlays and
-> can be stubbed/gated per-target. Phase 3 (endianness audit) next.
+> **Status:** Phases 0–3 done. `rom.exe` (25.26 MB) builds from this tree
+> and matches the upstream binary. PAL contract audited
+> ([docs/PAL_AUDIT.md](docs/PAL_AUDIT.md)) — core engine is platform-clean;
+> escapes are concentrated in debug UI + multiplayer. Endianness audited
+> ([docs/ENDIAN_AUDIT.md](docs/ENDIAN_AUDIT.md)) — exactly **one** critical
+> upstream patch needed for BE targets (CPU register union swap in `gbrt.h`);
+> everything else is deferred or already endian-safe. Phase 4 (Xbox 360
+> toolchain install) next.
 
 ---
 
@@ -58,9 +61,9 @@ toolchain file (added in Phase 4).
 | 0  | Repo scaffold                              | Private GH repo + working tree, README, .gitignore, CMakeLists       | **done**   |
 | 1  | Windows reference build from new tree      | `rom.exe` builds & matches upstream behavior                         | **done**   |
 | 2  | Audit PAL contract; document gaps          | docs/PAL_AUDIT.md catalogues every direct SDL/ImGui/stdio call       | **done**   |
-| 3  | Endianness + 32-bit audit                  | Big-endian-safe; ROM-derived arrays use byte accessors only          | next       |
-| 4  | Xbox 360 toolchain                         | devkitPPC + libxenon installed; CMake toolchain file; hello-world XEX boots Xenia | pending |
-| 5a | Upstream MP + ImGui gating patches         | Add `#ifdef LA_HAS_MULTIPLAYER` and `#ifdef LA_HAS_IMGUI` guards in `platform_sdl.cpp` + `menu_gui.cpp` so the 360 build can drop both | pending |
+| 3  | Endianness + 32-bit audit                  | docs/ENDIAN_AUDIT.md: core engine BE-safe; one critical fix needed in `gbrt.h` register unions | **done** |
+| 4  | Xbox 360 toolchain                         | devkitPPC + libxenon installed; CMake toolchain file; hello-world XEX boots Xenia | next       |
+| 5a | Upstream patches in gb-recompiled          | `#ifdef LA_HAS_MULTIPLAYER` + `LA_HAS_IMGUI` guards in `platform_sdl.cpp` + `menu_gui.cpp`; **AF/BC/DE/HL register union BE swap in `gbrt.h:84-99`** | pending |
 | 5  | `platform_libxenon.cpp`                    | 13 `gb_platform_*` + `GBPlatformCallbacks` registration; Xenos framebuffer, USB gamepad, audio, fs | pending |
 | 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so menu_gui + mp_menu can persist `bindings.cfg` on non-stdio targets | pending |
 | 7  | Iterate to playable in Xenia               | Boot + title screen + intro rendering correctly                      | pending    |
