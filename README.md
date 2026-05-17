@@ -18,8 +18,10 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Phase 1 — Windows reference build from this tree. Xbox 360 backend
-> not yet started.
+> **Status:** Phases 0 and 1 done — `rom.exe` (24.09 MB) builds from this tree
+> and matches the upstream `la-dx-recompiled` binary the user runs. CGB mode
+> verified (KEY1 register access in trace). Phase 2 (PAL audit) next. Xbox 360
+> backend not yet started.
 
 ---
 
@@ -53,7 +55,7 @@ toolchain file (added in Phase 4).
 | # | Phase                                  | Deliverable                                                          | Status      |
 | - | -------------------------------------- | -------------------------------------------------------------------- | ----------- |
 | 0 | Repo scaffold                          | Private GH repo + working tree, README, .gitignore, CMakeLists       | **done**    |
-| 1 | Windows reference build from new tree  | `rom.exe` builds & matches upstream behavior                         | in progress |
+| 1 | Windows reference build from new tree  | `rom.exe` builds & matches upstream behavior                         | **done**    |
 | 2 | Audit PAL contract; document gaps      | Inventory the 13 `gb_platform_*` calls + any escapes from contract   | next        |
 | 3 | Endianness + 32-bit audit              | Big-endian-safe; ROM-derived arrays use byte accessors only          | pending     |
 | 4 | Xbox 360 toolchain                     | devkitPPC + libxenon installed; CMake toolchain file; hello-world XEX boots Xenia | pending |
