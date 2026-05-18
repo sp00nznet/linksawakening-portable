@@ -36,7 +36,16 @@ test -f "$DEVKITXENON/lib/gcc/xenon/9.2.0/32/libgcc.a" \
 test -f "$DEVKITXENON/app.lds"                  || { echo "missing app.lds"; exit 1; }
 test -f "$DEVKITXENON/usr/lib/libxenon.a"       || { echo "missing libxenon.a"; exit 1; }
 
-echo "[2/4] Compile + link → hello.elf"
+echo "[2/4] Compile + link → hello.elf (loaded at 0x82000000 for Xenia)"
+# Two-target build:
+#   hello.elf            — linked via libxenon app.lds for JTAG/RGH (loads at 0x80000000)
+#   hello-xenia.elf32    — linked with .text at 0x82000000 for Xenia
+#
+# Why two: Xenia wants 0x82000000 (Xbox 360 retail load addr).
+# libxenon's app.lds places at 0x80000000 (RGH/JTAG convention).
+# The objcopy --adjust-vma trick used by libxenon's standard build leaves
+# zero-VMA placeholder sections that Xenia refuses to map.
+
 "$DEVKITXENON/bin/xenon-gcc" \
     -DXENON -m32 -maltivec -fno-pic -mpowerpc64 -mhard-float \
     -O2 -Wall \
@@ -48,7 +57,7 @@ echo "[2/4] Compile + link → hello.elf"
     -lxenon -lm -lc -lgcc \
     -o hello.elf
 
-echo "[3/4] Strip + relocate → hello.elf32"
+echo "[3/4] Strip + relocate → hello.elf32 (JTAG/RGH variant)"
 "$DEVKITXENON/bin/xenon-objcopy" -O elf32-powerpc --adjust-vma 0x80000000 hello.elf hello.elf32
 "$DEVKITXENON/bin/xenon-strip" hello.elf32
 
