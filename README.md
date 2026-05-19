@@ -18,15 +18,21 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Phases 0–4 done. `rom.exe` (25.26 MB) builds from this tree
-> and matches the upstream binary. PAL contract audited
-> ([docs/PAL_AUDIT.md](docs/PAL_AUDIT.md)) — core engine is platform-clean.
-> Endianness audited ([docs/ENDIAN_AUDIT.md](docs/ENDIAN_AUDIT.md)) — one
-> critical upstream patch needed for BE targets, scoped to Phase 5a.
-> Xbox 360 toolchain (libxenon in WSL Debian, xenon-gcc 9.2.0, app.lds,
-> elf2xex) is live, the CMake toolchain file is in `cmake/`, and a
-> hello-world XEX both builds and loads+executes in Xenia. Phase 5a
-> (upstream gating + register-union patch) next.
+> **Status:** Phases 0–5 done. Windows reference build (25.26 MB rom.exe)
+> unchanged. PAL + endianness audited. Xbox 360 toolchain live
+> (libxenon, xenon-gcc 9.2.0). gb-recompiled patched for cross-compile
+> (LA_HAS_IMGUI / LA_HAS_MULTIPLAYER gates, plain-C stubs, BE register
+> fix). **`platform_libxenon.c` is written** — all 13 `gb_platform_*` +
+> the audio/SRAM callbacks, against libxenon's xenos/sound/input APIs.
+> It compiles under xenon-gcc, links into `libgbrt-xenon.a`, and a test
+> XEX exercising it loads + executes in Xenia without error. Phase 6
+> (settings PAL extension) / Phase 7 (wire the real game + iterate to
+> playable) next.
+>
+> **Not yet verified:** that the test pattern actually *renders visibly*
+> in the Xenia window — libxenon's console output isn't captured in
+> Xenia's stdout log, so on-screen output needs a human looking at the
+> emulator window, or testing on real RGH/JTAG hardware.
 
 ---
 
@@ -65,7 +71,7 @@ toolchain file (added in Phase 4).
 | 3  | Endianness + 32-bit audit                  | docs/ENDIAN_AUDIT.md: core engine BE-safe; one critical fix needed in `gbrt.h` register unions | **done** |
 | 4  | Xbox 360 toolchain                         | libxenon at /usr/local/xenon (WSL Debian); CMake toolchain file in cmake/; hello-world XEX loads + executes in Xenia | **done** |
 | 5a | Upstream patches in gb-recompiled          | `#ifdef LA_HAS_MULTIPLAYER` + `LA_HAS_IMGUI` guards in `platform_sdl.cpp` + `menu_gui.cpp`; **AF/BC/DE/HL register union BE swap in `gbrt.h:84-99`** | pending |
-| 5  | `platform_libxenon.cpp`                    | 13 `gb_platform_*` + `GBPlatformCallbacks` registration; Xenos framebuffer, USB gamepad, audio, fs | pending |
+| 5  | `platform_libxenon.c`                      | 13 `gb_platform_*` + `GBPlatformCallbacks`; console-blit video, USB gamepad, ring-buffered audio, FATFS saves. Compiles + links + test XEX runs in Xenia. | **done** |
 | 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so menu_gui + mp_menu can persist `bindings.cfg` on non-stdio targets | pending |
 | 7  | Iterate to playable in Xenia               | Boot + title screen + intro rendering correctly                      | pending    |
 | 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS          | pending    |

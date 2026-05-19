@@ -33,11 +33,12 @@ SOURCES=(
     "$RUNTIME/src/ppu.c"
     "$RUNTIME/src/audio.c"
     "$RUNTIME/src/hwtrace.c"
-    # Note: platform_sdl.cpp is skipped here — for libxenon we'll write
-    # platform_libxenon.c in Phase 5. The runtime build only validates
-    # the platform-agnostic engine plus the stubs.
-    "$RUNTIME/src/menu_gui_stubs.c"          # the new stubs (plain C)
-    "$RUNTIME/src/asset_viewer_stubs.c"      # the new stubs (plain C)
+    # platform_libxenon.c replaces platform_sdl.cpp for the Xbox 360 build.
+    # Implements all 13 gb_platform_* + on_audio_sample / load/save_battery_ram
+    # against libxenon's xenos / xenon_sound / input / xenon_uart APIs.
+    "$RUNTIME/src/platform_libxenon.c"
+    "$RUNTIME/src/menu_gui_stubs.c"
+    "$RUNTIME/src/asset_viewer_stubs.c"
 )
 OBJS=()
 for src in "${SOURCES[@]}"; do
