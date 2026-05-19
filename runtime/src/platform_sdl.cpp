@@ -9,8 +9,10 @@
 #include "gbrt_debug.h"
 #include "menu_gui.h"
 #include "asset_viewer.h"
+#ifdef LA_HAS_MULTIPLAYER
 #include "multiplayer/mp_session.h"
 #include "multiplayer/mp_indicators.h"
+#endif
 
 #ifdef GB_HAS_SDL2
 #include <SDL.h>
@@ -165,7 +167,9 @@ static int g_frame_count = 0;
  * ========================================================================== */
 
 void gb_platform_shutdown(void) {
+#ifdef LA_HAS_MULTIPLAYER
     mp_session_shutdown();
+#endif
 
     if (g_gamepad) {
         SDL_GameControllerClose(g_gamepad);
@@ -599,6 +603,7 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
         }
     }
 
+#ifdef LA_HAS_MULTIPLAYER
     /* Render multiplayer player indicators (colored arrows/dots) */
     if (mp_session_is_active()) {
         int local_slot = mp_session_get_local_slot();
@@ -630,6 +635,7 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
                                  ps, MP_MAX_PLAYERS);
         }
     }
+#endif
 
     /* Scale2x filter: produce 320x288 output with smoothed pixel edges */
     if (g_filter_mode == 2) {
@@ -688,8 +694,10 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
+#ifdef LA_HAS_MULTIPLAYER
     /* Update multiplayer session */
     mp_session_update();
+#endif
 
     /* Draw menu system */
     menu_gui_draw(g_ctx);

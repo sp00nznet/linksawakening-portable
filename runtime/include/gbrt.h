@@ -80,21 +80,58 @@ typedef struct {
  * the current state of the emulated CPU.
  */
 typedef struct GBContext {
-    /* 8-bit registers */
+    /* 8-bit registers.
+     *
+     * The Game Boy stores AF/BC/DE/HL with the high register in the high byte
+     * (e.g. AF = (A << 8) | F). We expose both the byte view and the 16-bit
+     * view via unions, so the struct field order in memory must put the
+     * GB-high byte at the offset that the host considers "high".
+     *
+     * On little-endian hosts, byte offset 1 is the high byte → field order
+     * (low, high) e.g. {f, a}.
+     * On big-endian hosts (Xbox 360 Xenon, PS3 Cell PPE), byte offset 0 is
+     * the high byte → field order (high, low) e.g. {a, f}.
+     *
+     * Same pattern used by SameBoy, mGBA, BGB.
+     */
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#  define GBRT_REG_PAIR_BE 1
+#elif defined(__BIG_ENDIAN__) && !defined(__LITTLE_ENDIAN__)
+#  define GBRT_REG_PAIR_BE 1
+#else
+#  define GBRT_REG_PAIR_BE 0
+#endif
+
     union {
-        struct { uint8_t f, a; };  /**< AF register pair (little-endian) */
+#if GBRT_REG_PAIR_BE
+        struct { uint8_t a, f; };  /**< AF register pair (big-endian host) */
+#else
+        struct { uint8_t f, a; };  /**< AF register pair (little-endian host) */
+#endif
         uint16_t af;
     };
     union {
-        struct { uint8_t c, b; };  /**< BC register pair */
+#if GBRT_REG_PAIR_BE
+        struct { uint8_t b, c; };  /**< BC register pair (big-endian host) */
+#else
+        struct { uint8_t c, b; };  /**< BC register pair (little-endian host) */
+#endif
         uint16_t bc;
     };
     union {
-        struct { uint8_t e, d; };  /**< DE register pair */
+#if GBRT_REG_PAIR_BE
+        struct { uint8_t d, e; };  /**< DE register pair (big-endian host) */
+#else
+        struct { uint8_t e, d; };  /**< DE register pair (little-endian host) */
+#endif
         uint16_t de;
     };
     union {
-        struct { uint8_t l, h; };  /**< HL register pair */
+#if GBRT_REG_PAIR_BE
+        struct { uint8_t h, l; };  /**< HL register pair (big-endian host) */
+#else
+        struct { uint8_t l, h; };  /**< HL register pair (little-endian host) */
+#endif
         uint16_t hl;
     };
     

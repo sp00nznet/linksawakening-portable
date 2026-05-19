@@ -18,8 +18,10 @@ extern "C" {
 #include "gbrt.h"
 }
 
+#ifdef LA_HAS_MULTIPLAYER
 #include "multiplayer/mp_menu.h"
 #include "multiplayer/mp_session.h"
+#endif
 
 /* ================================================================
  * Menu state
@@ -429,8 +431,10 @@ static void draw_menu_bar(GBContext* ctx)
             ImGui::EndMenu();
         }
 
+#ifdef LA_HAS_MULTIPLAYER
         /* ---- Multiplayer ---- */
         mp_menu_draw_menu_item(ctx);
+#endif
 
         /* ---- Help ---- */
         if (ImGui::BeginMenu("Help")) {
@@ -857,9 +861,11 @@ extern "C" void menu_gui_init(void)
     io.IniFilename = NULL; /* Don't save layout */
     menu_gui_load_bindings();
 
+#ifdef LA_HAS_MULTIPLAYER
     /* Initialize multiplayer */
     mp_session_init();
     mp_menu_init();
+#endif
 }
 
 /* Simple settings snapshot for auto-save on change */
@@ -893,8 +899,10 @@ extern "C" void menu_gui_draw(GBContext* ctx)
     /* Asset viewer */
     asset_viewer_draw(ctx);
 
+#ifdef LA_HAS_MULTIPLAYER
     /* Multiplayer overlays */
     mp_menu_draw_overlays();
+#endif
 
     /* Auto-save settings on change */
     uint32_t new_hash = settings_hash();

@@ -9,6 +9,7 @@
 #define GBRT_ASSET_VIEWER_H
 
 #include <stdbool.h>
+#include <stdint.h>  /* for int16_t */
 
 #ifdef __cplusplus
 extern "C" {
