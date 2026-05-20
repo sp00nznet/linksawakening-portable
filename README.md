@@ -18,19 +18,20 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Windows reference build works (25.2 MB rom.exe). Three
-> console ports built:
+> **Status:** Windows reference build works (25.2 MB rom.exe). Four
+> console ports:
 >
-> - **PS4** — full game builds end to end → installable
->   **`linksawakening.pkg`** (20 MB). x86-64 LE, reuses `platform_sdl.cpp`
->   via OpenOrbis's SDL2 port. ImGui/multiplayer off.
-> - **3DS** — full game builds end to end → **`linksawakening.3dsx`**
->   (22 MB). Native libctru backend (`platform_3ds.c`). ARM LE.
+> - **3DS** — **running on real hardware** (New 2DS XL). Native libctru
+>   backend (`platform_3ds.c`) → `linksawakening.3dsx` (22 MB). Reaches
+>   gameplay. `osSetSpeedupEnable` added to unlock New-3DS clocks.
+> - **PS3** — **running in RPCS3 at ~56 FPS**, title screen + gameplay.
+>   Native PSL1GHT backend (`platform_psl1ght.c`) → fake-self `EBOOT.BIN`
+>   (25 MB). PowerPC big-endian — the Phase 5a register fix carries it.
+> - **PS4** — full game builds → installable `linksawakening.pkg`
+>   (20 MB). x86-64 LE, reuses `platform_sdl.cpp` via OpenOrbis's SDL2.
+>   Not yet hardware-tested.
 > - **Xbox 360 — PARKED.** `platform_libxenon.c` written + a test XEX
 >   builds, but the full-game XEX hits a memory error in Xenia.
->
-> Both the PS4 `.pkg` and 3DS `.3dsx` build cleanly but have **not been
-> run on hardware/emulator yet** — first-boot behaviour is unverified.
 
 ---
 
@@ -77,7 +78,10 @@ toolchain file (added in Phase 4).
 | P4 | PS4 install + hardware test                | Install `.pkg` on the jailbroken PS4, confirm boot + rendering                 | pending    |
 | D1 | 3DS toolchain + backend                    | devkitARM + libctru; native `platform_3ds.c` (gfx/hid/ndsp/sdmc)               | **done**   |
 | D2 | 3DS full-game build                        | `rom.c` + runtime + `platform_3ds.c` → `linksawakening.3dsx` (22 MB)            | **done**   |
-| D3 | 3DS test in emulator / hardware            | Run `.3dsx` in a Citra fork (Lime3DS/Azahar) or on a modded 3DS                | next       |
+| D3 | 3DS test in emulator / hardware            | Runs in Azahar + on a real New 2DS XL — reaches gameplay                       | **done**   |
+| S1 | PS3 toolchain (PSL1GHT)                     | ps3dev Docker image; `cmake/test/build_ps3.sh`                                 | **done**   |
+| S2 | PS3 full-game build                        | `rom.c` + runtime + `platform_psl1ght.c` → fake-self `EBOOT.BIN` (25 MB)        | **done**   |
+| S3 | PS3 test in RPCS3 / hardware               | Boots in RPCS3 at ~56 FPS — title screen + gameplay render correctly           | **done**   |
 | 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so settings persist on non-stdio targets           | pending    |
 | 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS                     | pending    |
 

@@ -189,6 +189,12 @@ void gb_platform_render_frame(const uint32_t* framebuffer)
 bool gb_platform_init(int scale)
 {
     (void)scale;                 /* 3DS: fixed 1:1 centered blit for now */
+
+    /* Opt into the New 3DS / New 2DS XL faster CPU (804 MHz + extra L2).
+     * Without this, homebrew runs at the old-3DS-compatible 268 MHz even
+     * on New-series hardware. No-op (and harmless) on original 3DS/2DS. */
+    osSetSpeedupEnable(true);
+
     gfxInitDefault();
     /* GSP_BGR8_OES is the gfx default; set explicitly for clarity. */
     gfxSetScreenFormat(GFX_TOP, GSP_BGR8_OES);
