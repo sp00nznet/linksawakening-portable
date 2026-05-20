@@ -20,9 +20,10 @@ reference build).
 
 Built on:
 
-- **[`sp00nznet/la-dx-recompiled`](https://github.com/sp00nznet/la-dx-recompiled)** (private)
-  — the game project (`rom.c` ~115 MB recompiler output, `rom_main.c` entry,
-  `rom_rom.c` ROM bytes). Vendored into this tree at the root.
+- **[`sp00nznet/LinksAwakening`](https://github.com/sp00nznet/LinksAwakening)**
+  — the upstream game project: the `rom_main.c` entry point, `rom.h`, and the
+  build glue. The recompiler output (`rom.c`, `rom_rom.c`) is generated locally
+  from your own ROM and is never committed.
 - **[`sp00nznet/gb-recompiled`](https://github.com/sp00nznet/gb-recompiled)**
   (fork of [`arcanite24/gb-recompiled`](https://github.com/arcanite24/gb-recompiled))
   — the runtime engine (`gbrt`, `ppu`, `audio`, `interpreter`, `menu_gui`, plus
@@ -112,7 +113,7 @@ linksawakening-portable/
 ├── README.md                       # this file — keep the phase table current
 ├── .gitignore                      # ROM, recompiler output, build artifacts excluded
 ├── CMakeLists.txt                  # Windows/SDL2 build (LA_MULTIPLAYER=ON by default)
-├── rom_main.c                      # Entry point (from la-dx-recompiled)
+├── rom_main.c                      # Entry point (from sp00nznet/LinksAwakening)
 ├── rom.h                           # Generated declarations
 ├── rom.c                           # gitignored — 115 MB recompiler output
 ├── rom_rom.c                       # gitignored — 6.3 MB ROM-as-C-array
@@ -140,43 +141,34 @@ linksawakening-portable/
 
 ---
 
-## ROM handling
+## ROM handling — no copyrighted content in this repo
 
-The ROM is **never committed**. The recompiler output `rom.c` and `rom_rom.c`
-are also gitignored — both are derived from your ROM. You supply the ROM and
-regenerate both files locally via [gb-recompiled](https://github.com/sp00nznet/gb-recompiled).
+This repository contains **no game ROM and no recompiled game code.** The
+three recompiler-output files — `rom.c`, `rom.h`, `rom_rom.c` — are derived
+from a Game Boy ROM and are `.gitignore`d. You generate them yourself by
+running [gb-recompiled](https://github.com/sp00nznet/gb-recompiled) against
+a **legally obtained** Link's Awakening DX ROM, then drop them at the repo
+root. See [docs/BUILDING.md](docs/BUILDING.md).
 
-To pull updates from the upstream LA project (when `rom.c` itself gets
-regenerated with a new recompiler bug fix, like the `(HL)` ALU fix or the
-STORE8 union aliasing fix in earlier commits), copy
-`D:\la-dx-recompiled\rom.c` and `rom_rom.c` back into this tree.
+What *is* in the repo: the platform backends, build scripts, and the
+vendored open-source runtime — all of it freely redistributable (see
+[Credits](#credits)).
 
 ---
 
-## Building (Windows reference)
+## Building
 
-Prereqs: MSYS2 with MinGW64 + SDL2 + CMake 3.16+ + Ninja.
+Full step-by-step instructions for every platform — toolchain setup, build
+commands, and how to install/run — are in **[docs/BUILDING.md](docs/BUILDING.md)**.
+
+Quick start for the Windows reference build (MSYS2 + MinGW64 + SDL2 + CMake + Ninja):
 
 ```bash
-# from msys2 mingw64 shell
-PATH="/c/msys64/mingw64/bin:$PATH"
-cmake -S . -B build -G Ninja
+export PATH="/c/msys64/mingw64/bin:$PATH"
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/rom.exe
 ```
-
-Multiplayer is on by default (matches upstream). To build single-player only
-(useful as a smaller surface for the 360 port):
-
-```bash
-cmake -S . -B build -G Ninja -DLA_MULTIPLAYER=OFF
-# Note: rom_main.c still calls mp_session_is_client_connected() unconditionally.
-# Phase 6 fixes that gating; until then, LA_MULTIPLAYER=OFF will fail to link.
-```
-
-The Xbox 360 build will live alongside this one once Phase 4 lands. It will use
-a separate CMake toolchain file (`cmake/toolchain-libxenon.cmake`) and a
-sibling `runtime/src/platform_libxenon.cpp`.
 
 ---
 
@@ -207,11 +199,41 @@ sibling `runtime/src/platform_libxenon.cpp`.
 
 ## Credits
 
-- Game: Nintendo / Grezzo (Link's Awakening DX, 1998)
-- Recompiler: [`arcanite24/gb-recompiled`](https://github.com/arcanite24/gb-recompiled) + your fork
-- Disassembly: [LADX-Disassembly](https://github.com/zladx/LADX-Disassembly) contributors
-- Multiplayer overlay (when enabled): [`sp00nznet/la-mp`](https://github.com/sp00nznet/la-mp)
-- Reference emulator: [SameBoy](https://github.com/LIJI32/SameBoy)
-- 360 toolchain: [libxenon](https://github.com/Free60Project/libxenon) / Free60 project
+**Game**
+- *The Legend of Zelda: Link's Awakening DX* © 1993, 1998 Nintendo / Grezzo.
+  Not affiliated with or endorsed by Nintendo. No game ROM or game code is
+  distributed here.
 
-Educational / preservation. You must supply your own legally obtained ROM.
+**Recompilation**
+- [`arcanite24/gb-recompiled`](https://github.com/arcanite24/gb-recompiled) — the
+  Game Boy static recompiler, and [`sp00nznet/gb-recompiled`](https://github.com/sp00nznet/gb-recompiled)
+  the runtime fork vendored at `runtime/`.
+- [`sp00nznet/LinksAwakening`](https://github.com/sp00nznet/LinksAwakening) — the
+  upstream LA DX game project.
+- [LADX-Disassembly](https://github.com/zladx/LADX-Disassembly) contributors — the
+  reverse-engineering work the recompiler builds on.
+- [SameBoy](https://github.com/LIJI32/SameBoy) by LIJI32 — reference emulator used
+  for hardware-trace comparison.
+- Multiplayer overlay (optional): [`sp00nznet/la-mp`](https://github.com/sp00nznet/la-mp).
+
+**Vendored libraries** (`runtime/third_party/`)
+- [Dear ImGui](https://github.com/ocornut/imgui) by Omar Cornut — MIT.
+- [ENet](https://github.com/lsalzman/enet) by Lee Salzman — MIT.
+
+**Platform toolchains & SDKs**
+- 3DS: [devkitPro / devkitARM + libctru](https://devkitpro.org/).
+- PS3: [PSL1GHT](https://github.com/ps3dev/PSL1GHT) / the ps3dev project.
+- PS4: [OpenOrbis PS4 Toolchain](https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain).
+- Xbox 360: [libxenon](https://github.com/Free60Project/libxenon) / Free60.
+- WebAssembly: [Emscripten](https://emscripten.org/).
+- SDL2: [libsdl-org/SDL](https://github.com/libsdl-org/SDL).
+
+## License
+
+The platform-port code original to this repository (the `platform_*` backends,
+build scripts, CMake glue, `rom_main.c`) is released under the **MIT License** —
+see [LICENSE](LICENSE). Vendored components keep their own licenses (ImGui and
+ENet ship `LICENSE` files under `runtime/third_party/`).
+
+This is a non-commercial, educational / preservation project. It distributes no
+copyrighted Nintendo content — you must supply your own legally obtained ROM.
