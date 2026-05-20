@@ -53,6 +53,9 @@ static GBContext* g_ctx = NULL;
 
 /* Gamepad */
 static SDL_GameController* g_gamepad = NULL;
+/* Raw-joystick fallback: used when a device has no SDL_GameController
+ * mapping — notably the DualShock on the OpenOrbis PS4 SDL2 port. */
+static SDL_Joystick* g_joystick = NULL;
 
 /* ============================================================================
  * Automation State
@@ -186,6 +189,10 @@ void gb_platform_shutdown(void) {
     if (g_gamepad) {
         SDL_GameControllerClose(g_gamepad);
         g_gamepad = NULL;
+    }
+    if (g_joystick) {
+        SDL_JoystickClose(g_joystick);
+        g_joystick = NULL;
     }
     if (g_audio_device) {
         SDL_CloseAudioDevice(g_audio_device);
@@ -406,6 +413,15 @@ bool gb_platform_poll_events(GBContext* ctx) {
             }
         }
     }
+    /* If no device matched a GameController mapping, fall back to a raw
+     * joystick (the OpenOrbis PS4 SDL2 port exposes the DualShock this
+     * way — as an unmapped SDL_Joystick). */
+    if (!g_gamepad && !g_joystick && SDL_NumJoysticks() > 0) {
+        g_joystick = SDL_JoystickOpen(0);
+        if (g_joystick)
+            fprintf(stderr, "[SDL] Joystick opened (raw): %s\n",
+                    SDL_JoystickName(g_joystick));
+    }
 
     /* ---- Process SDL events (for ImGui, window, hotplug) ---- */
     SDL_Event event;
@@ -507,6 +523,39 @@ bool gb_platform_poll_events(GBContext* ctx) {
                     held = true;
             }
 
+            if (held) {
+                g_joypad_dpad    &= ~gb_btn_dpad_mask[i];
+                g_joypad_buttons &= ~gb_btn_buttons_mask[i];
+            }
+        }
+    }
+    /* ---- Raw joystick fallback (device has no GameController mapping) ---- */
+    else if (g_joystick) {
+        /* OpenOrbis PS4 SDL2 DualShock raw-button layout. Index order by
+         * GB_BTN_*: UP, DOWN, LEFT, RIGHT, A, B, SELECT, START. */
+        static const int js_btn[GB_BTN_COUNT] = {
+            13,  /* UP                */
+            14,  /* DOWN              */
+            15,  /* LEFT              */
+            16,  /* RIGHT             */
+            0,   /* A      <- Cross   */
+            1,   /* B      <- Circle  */
+            8,   /* SELECT <- Share   */
+            9,   /* START  <- Options */
+        };
+        int nb = SDL_JoystickNumButtons(g_joystick);
+        int na = SDL_JoystickNumAxes(g_joystick);
+        for (int i = 0; i < GB_BTN_COUNT; i++) {
+            bool held = false;
+            if (js_btn[i] < nb && SDL_JoystickGetButton(g_joystick, js_btn[i]))
+                held = true;
+            /* left analog stick (axes 0/1) also drives the d-pad */
+            if (na >= 2) {
+                if (i == GB_BTN_LEFT  && SDL_JoystickGetAxis(g_joystick, 0) < -16000) held = true;
+                if (i == GB_BTN_RIGHT && SDL_JoystickGetAxis(g_joystick, 0) >  16000) held = true;
+                if (i == GB_BTN_UP    && SDL_JoystickGetAxis(g_joystick, 1) < -16000) held = true;
+                if (i == GB_BTN_DOWN  && SDL_JoystickGetAxis(g_joystick, 1) >  16000) held = true;
+            }
             if (held) {
                 g_joypad_dpad    &= ~gb_btn_dpad_mask[i];
                 g_joypad_buttons &= ~gb_btn_buttons_mask[i];

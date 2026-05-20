@@ -1,11 +1,22 @@
 # linksawakening-portable
 
 Multi-platform port of the static recompilation of *The Legend of Zelda:
-Link's Awakening DX* (Game Boy Color). Starting target: **Xbox 360** via
-[libxenon](https://github.com/Free60Project/libxenon), testable in
-[Xenia](https://xenia.jp/). Designed so additional backends — WebAssembly,
-Android, Original Xbox (NXDK), PS3 (PSL1GHT), Dreamcast (KallistiOS) — can
-drop in as siblings of the existing SDL2 backend.
+Link's Awakening DX* (Game Boy Color). The game is recompiled to native C;
+each platform gets a backend implementing one shared interface. **Running
+on PlayStation 4, PlayStation 3, and Nintendo 3DS** (plus the Windows
+reference build).
+
+**→ Build instructions for every platform: [docs/BUILDING.md](docs/BUILDING.md)**
+
+## Screenshots
+
+| 3DS — title (Azahar) | 3DS — name entry | 3DS — gameplay |
+|----------------------|------------------|----------------|
+| ![3DS title](screenshots/3ds-title.png) | ![3DS name entry](screenshots/3ds-nameentry.png) | ![3DS gameplay](screenshots/3ds-gameplay.png) |
+
+| PS3 — title (RPCS3) |
+|---------------------|
+| ![PS3 title](screenshots/ps3-title.png) |
 
 Built on:
 
@@ -18,20 +29,19 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Windows reference build works (25.2 MB rom.exe). Four
-> console ports:
+> **Status** (Windows reference build works — 25 MB `rom.exe`):
 >
-> - **3DS** — **running on real hardware** (New 2DS XL). Native libctru
->   backend (`platform_3ds.c`) → `linksawakening.3dsx` (22 MB). Reaches
->   gameplay. `osSetSpeedupEnable` added to unlock New-3DS clocks.
-> - **PS3** — **running in RPCS3 at ~56 FPS**, title screen + gameplay.
->   Native PSL1GHT backend (`platform_psl1ght.c`) → fake-self `EBOOT.BIN`
->   (25 MB). PowerPC big-endian — the Phase 5a register fix carries it.
-> - **PS4** — full game builds → installable `linksawakening.pkg`
->   (20 MB). x86-64 LE, reuses `platform_sdl.cpp` via OpenOrbis's SDL2.
->   Not yet hardware-tested.
-> - **Xbox 360 — PARKED.** `platform_libxenon.c` written + a test XEX
->   builds, but the full-game XEX hits a memory error in Xenia.
+> | Platform | Backend | State |
+> | --- | --- | --- |
+> | **PlayStation 4** | `platform_sdl.cpp` (OpenOrbis SDL2) | ✅ **Running on real hardware.** Installable `linksawakening.pkg` (20 MB). |
+> | **PlayStation 3** | `platform_psl1ght.c` (native PSL1GHT) | ✅ **Running in RPCS3 at ~56 FPS** — title + gameplay. `EBOOT.BIN` (25 MB). |
+> | **Nintendo 3DS** | `platform_3ds.c` (native libctru) | ✅ **Running in Azahar *and* on a real New 2DS XL** — reaches gameplay. `linksawakening.3dsx` (22 MB). |
+> | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⏸ Parked — full-game XEX hits a memory error in Xenia. |
+> | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ⏸ Blocked — recompiler emits functions over wasm's 7.65 MB per-function cap. |
+>
+> Big-endian targets (PS3, and the parked 360) are carried by the
+> AF/BC/DE/HL register-pair fix in `gbrt.h`. See
+> [docs/BUILDING.md](docs/BUILDING.md) to build any of them.
 
 ---
 
@@ -75,15 +85,15 @@ toolchain file (added in Phase 4).
 | P1 | PS4 toolchain (OpenOrbis)                  | `cmake/toolchain-ps4.cmake`; clang `x86_64-pc-freebsd12-elf`; libxenon-style probe + build scripts in `cmake/test/` | **done** |
 | P2 | PS4 full-game build                        | `rom.c` + runtime + `platform_sdl.cpp` (OpenOrbis SDL2) → `eboot.bin` (18 MB) | **done** |
 | P3 | PS4 `.pkg` packaging                       | `create-fself` → `create-gp4` → `PkgTool.Core` → **`linksawakening.pkg`** (20 MB) | **done** |
-| P4 | PS4 install + hardware test                | Install `.pkg` on the jailbroken PS4, confirm boot + rendering                 | pending    |
+| P4 | PS4 install + hardware test                | `.pkg` installed on the jailbroken PS4 — boots + plays. Raw-`SDL_Joystick` input fix for the DualShock | **done** |
 | D1 | 3DS toolchain + backend                    | devkitARM + libctru; native `platform_3ds.c` (gfx/hid/ndsp/sdmc)               | **done**   |
 | D2 | 3DS full-game build                        | `rom.c` + runtime + `platform_3ds.c` → `linksawakening.3dsx` (22 MB)            | **done**   |
 | D3 | 3DS test in emulator / hardware            | Runs in Azahar + on a real New 2DS XL — reaches gameplay                       | **done**   |
 | S1 | PS3 toolchain (PSL1GHT)                     | ps3dev Docker image; `cmake/test/build_ps3.sh`                                 | **done**   |
 | S2 | PS3 full-game build                        | `rom.c` + runtime + `platform_psl1ght.c` → fake-self `EBOOT.BIN` (25 MB)        | **done**   |
 | S3 | PS3 test in RPCS3 / hardware               | Boots in RPCS3 at ~56 FPS — title screen + gameplay render correctly           | **done**   |
+| W  | WebAssembly (Emscripten)                   | **BLOCKED** — recompiler emits functions over wasm's 7.65 MB per-function cap   | blocked    |
 | 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so settings persist on non-stdio targets           | pending    |
-| 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS                     | pending    |
 
 Phase 2 in the original plan was "extract a PAL." That work was already done
 by upstream — `platform_sdl.h` is the PAL. Phase 2 was an audit confirming no

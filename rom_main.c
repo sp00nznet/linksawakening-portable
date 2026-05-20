@@ -13,7 +13,50 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
     int max_frames = 0;  /* 0 = unlimited */
+
+#ifdef GB_HAS_SDL2
+/* One game-loop iteration. Returns 0 when the platform asks to quit.
+ * Shared by the native blocking loop and the Emscripten rAF callback —
+ * the browser can't run a blocking while(1), so on WASM this is driven
+ * by emscripten_set_main_loop instead. */
+static int g_frame_count = 0;
+static int la_loop_iter(GBContext* ctx) {
+#ifdef LA_HAS_MULTIPLAYER
+    if (mp_session_is_client_connected()) {
+        /* Client mode: service network, display received framebuffers. */
+        if (!gb_platform_poll_events(ctx)) return 0;
+        mp_session_update();
+        const uint32_t* fb = mp_session_get_framebuffer();
+        if (fb) gb_platform_render_frame(fb);
+        gb_platform_vsync();
+        return 1;
+    }
+#endif
+    /* Normal mode (solo or host): run local game */
+    gb_run_frame(ctx);
+    if (!gb_platform_poll_events(ctx)) return 0;
+    if (ctx->frame_done) {
+        const uint32_t* fb = gb_get_framebuffer(ctx);
+        if (fb) gb_platform_render_frame(fb);
+        gb_reset_frame(ctx);
+        ctx->stopped = 0;
+        gb_platform_vsync();
+        g_frame_count++;
+        if (max_frames > 0 && g_frame_count >= max_frames) return 0;
+    }
+    return 1;
+}
+
+#ifdef __EMSCRIPTEN__
+static GBContext* g_em_ctx = NULL;
+static void la_em_frame(void) { la_loop_iter(g_em_ctx); }
+#endif
+#endif /* GB_HAS_SDL2 */
 
 int main(int argc, char* argv[]) {
     // Parse args
@@ -59,36 +102,17 @@ int main(int argc, char* argv[]) {
 
 #ifdef GB_HAS_SDL2
 
+#ifdef __EMSCRIPTEN__
+    /* The browser owns the event loop — hand the per-frame callback to
+     * emscripten. simulate_infinite_loop=1 means this call never returns,
+     * so shutdown/destroy below are intentionally unreachable on WASM. */
+    g_em_ctx = ctx;
+    emscripten_set_main_loop(la_em_frame, 0, 1);
+#else
     // Run the game loop
-    int frame_count = 0;
-    while (1) {
-#ifdef LA_HAS_MULTIPLAYER
-        if (mp_session_is_client_connected()) {
-            /* Client mode: don't run local game, just service network
-             * and display framebuffers received from the host. */
-            if (!gb_platform_poll_events(ctx)) break;
-            mp_session_update();
-            const uint32_t* fb = mp_session_get_framebuffer();
-            if (fb) gb_platform_render_frame(fb);
-            gb_platform_vsync();
-            frame_count++;
-            continue;
-        }
-#endif
-        /* Normal mode (solo or host): run local game */
-        gb_run_frame(ctx);
-        if (!gb_platform_poll_events(ctx)) break;
-        if (ctx->frame_done) {
-            const uint32_t* fb = gb_get_framebuffer(ctx);
-            if (fb) gb_platform_render_frame(fb);
-            gb_reset_frame(ctx);
-            ctx->stopped = 0;
-            gb_platform_vsync();
-            frame_count++;
-            if (max_frames > 0 && frame_count >= max_frames) break;
-        }
-    }
+    while (la_loop_iter(ctx)) { }
     gb_platform_shutdown();
+#endif
 #else
     // No SDL2 - just run for testing
     rom_run(ctx);
