@@ -18,21 +18,19 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Windows reference build works (25.2 MB rom.exe). Two console
-> ports built:
+> **Status:** Windows reference build works (25.2 MB rom.exe). Three
+> console ports built:
 >
-> - **PS4** — full game builds end to end. `rom.c` (115 MB) compiles
->   unchanged (x86-64 LE), reuses `platform_sdl.cpp` via OpenOrbis's SDL2
->   port, packages to an installable **`linksawakening.pkg`** (20 MB).
->   ImGui off (OpenOrbis SDL2 predates 2.0.17); multiplayer off. Ready to
->   install + test on a jailbroken PS4.
+> - **PS4** — full game builds end to end → installable
+>   **`linksawakening.pkg`** (20 MB). x86-64 LE, reuses `platform_sdl.cpp`
+>   via OpenOrbis's SDL2 port. ImGui/multiplayer off.
+> - **3DS** — full game builds end to end → **`linksawakening.3dsx`**
+>   (22 MB). Native libctru backend (`platform_3ds.c`). ARM LE.
 > - **Xbox 360 — PARKED.** `platform_libxenon.c` written + a test XEX
->   builds, but the full-game XEX hits a memory error in Xenia (likely
->   the 115 MB `rom.c` vs Xenia's homebrew memory model). Set aside in
->   favour of PS4 / 3DS.
+>   builds, but the full-game XEX hits a memory error in Xenia.
 >
-> Next: install + test the PS4 `.pkg` on hardware; then the 3DS port
-> (devkitARM + libctru).
+> Both the PS4 `.pkg` and 3DS `.3dsx` build cleanly but have **not been
+> run on hardware/emulator yet** — first-boot behaviour is unverified.
 
 ---
 
@@ -76,8 +74,10 @@ toolchain file (added in Phase 4).
 | P1 | PS4 toolchain (OpenOrbis)                  | `cmake/toolchain-ps4.cmake`; clang `x86_64-pc-freebsd12-elf`; libxenon-style probe + build scripts in `cmake/test/` | **done** |
 | P2 | PS4 full-game build                        | `rom.c` + runtime + `platform_sdl.cpp` (OpenOrbis SDL2) → `eboot.bin` (18 MB) | **done** |
 | P3 | PS4 `.pkg` packaging                       | `create-fself` → `create-gp4` → `PkgTool.Core` → **`linksawakening.pkg`** (20 MB) | **done** |
-| P4 | PS4 install + hardware test                | Install `.pkg` on the jailbroken PS4, confirm boot + rendering                 | next       |
-| 3D | 3DS port                                   | devkitARM + libctru; SDL2-3DS or native backend; Citra for testing             | pending    |
+| P4 | PS4 install + hardware test                | Install `.pkg` on the jailbroken PS4, confirm boot + rendering                 | pending    |
+| D1 | 3DS toolchain + backend                    | devkitARM + libctru; native `platform_3ds.c` (gfx/hid/ndsp/sdmc)               | **done**   |
+| D2 | 3DS full-game build                        | `rom.c` + runtime + `platform_3ds.c` → `linksawakening.3dsx` (22 MB)            | **done**   |
+| D3 | 3DS test in emulator / hardware            | Run `.3dsx` in a Citra fork (Lime3DS/Azahar) or on a modded 3DS                | next       |
 | 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so settings persist on non-stdio targets           | pending    |
 | 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS                     | pending    |
 
