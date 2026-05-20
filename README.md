@@ -3,8 +3,8 @@
 Multi-platform port of the static recompilation of *The Legend of Zelda:
 Link's Awakening DX* (Game Boy Color). The game is recompiled to native C;
 each platform gets a backend implementing one shared interface. **Running
-on PlayStation 4, PlayStation 3, Nintendo 3DS, and Nintendo Wii** (plus the
-Windows reference build).
+on PlayStation 4, PlayStation 3, Nintendo 3DS, Nintendo Wii, and Android**
+(plus the Windows reference build).
 
 **→ Build instructions for every platform: [docs/BUILDING.md](docs/BUILDING.md)**
 
@@ -14,9 +14,9 @@ Windows reference build).
 |----------------------|------------------|----------------|
 | ![3DS title](screenshots/3ds-title.png) | ![3DS name entry](screenshots/3ds-nameentry.png) | ![3DS gameplay](screenshots/3ds-gameplay.png) |
 
-| PS3 — title (RPCS3) | Wii — title (Dolphin) |
-|---------------------|-----------------------|
-| ![PS3 title](screenshots/ps3-title.png) | ![Wii title](screenshots/wii-title.png) |
+| PS3 — title (RPCS3) | Wii — title (Dolphin) | Android — title (emulator) |
+|---------------------|-----------------------|----------------------------|
+| ![PS3 title](screenshots/ps3-title.png) | ![Wii title](screenshots/wii-title.png) | ![Android title](screenshots/android-title.png) |
 
 Built on:
 
@@ -38,6 +38,7 @@ Built on:
 > | **PlayStation 3** | `platform_psl1ght.c` (native PSL1GHT) | ✅ **Running in RPCS3 at ~56 FPS** — title + gameplay. `EBOOT.BIN` (25 MB). |
 > | **Nintendo 3DS** | `platform_3ds.c` (native libctru) | ✅ **Running in Azahar *and* on a real New 2DS XL** — reaches gameplay. `linksawakening.3dsx` (22 MB). |
 > | **Nintendo Wii** | `platform_wii.c` (native libogc) | ✅ **Running in Dolphin** — title screen + intro. `linksawakening.dol` (24 MB). |
+> | **Android** | `platform_sdl.cpp` (SDL2 + NDK) | ✅ **Running in the Android emulator** — title screen, fullscreen landscape with on-screen touch controls. `linksawakening.apk` (11 MB, x86_64). |
 > | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⏸ Parked — full-game XEX hits a memory error in Xenia. |
 > | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ⏸ Blocked — recompiler emits functions over wasm's 7.65 MB per-function cap. |
 >
@@ -60,7 +61,7 @@ that satisfies the same header.** No runtime refactor required.
 
 ```
 runtime/include/platform_sdl.h        ← the contract (do not rename)
-runtime/src/platform_sdl.cpp          ← SDL2 backend       (Windows / macOS / Linux / WASM-via-SDL)
+runtime/src/platform_sdl.cpp          ← SDL2 backend       (Windows / macOS / Linux / Android / WASM-via-SDL)
 runtime/src/platform_libxenon.cpp     ← Xbox 360 backend   (Phase 4)
 runtime/src/platform_nxdk.cpp         ← Original Xbox      (later)
 runtime/src/platform_psl1ght.cpp      ← PS3                (later)
@@ -88,7 +89,8 @@ toolchain file (added in Phase 4).
   register-pair fix — so the runtime builds for any target.
 
 **Platforms** — see the [status table](#linksawakening-portable) above:
-PS4, PS3, 3DS, and Wii are playable; Xbox 360 is parked; WebAssembly is blocked.
+PS4, PS3, 3DS, Wii, and Android are playable; Xbox 360 is parked;
+WebAssembly is blocked.
 
 **Open work:**
 
@@ -134,6 +136,7 @@ linksawakening-portable/
 │   └── third_party/
 │       ├── imgui/                  # base menu uses this — always built
 │       └── enet/                   # only built when LA_MULTIPLAYER=ON
+├── android/                        # Android Gradle project (SDL2 backend; SDL vendored at build time)
 ├── tools/                          # Debug tracing tools (SameBoy headless ref tracer)
 └── docs/
     └── PORTING.md                  # PAL interface, endianness checklist, backend matrix
@@ -225,6 +228,7 @@ cmake --build build
 - Wii: [devkitPro / devkitPPC + libogc](https://devkitpro.org/).
 - PS3: [PSL1GHT](https://github.com/ps3dev/PSL1GHT) / the ps3dev project.
 - PS4: [OpenOrbis PS4 Toolchain](https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain).
+- Android: [Android NDK + SDK](https://developer.android.com/ndk) — reuses the SDL2 Android backend.
 - Xbox 360: [libxenon](https://github.com/Free60Project/libxenon) / Free60.
 - WebAssembly: [Emscripten](https://emscripten.org/).
 - SDL2: [libsdl-org/SDL](https://github.com/libsdl-org/SDL).

@@ -43,6 +43,14 @@ bindings.cfg
 # Android
 *.apk
 *.aab
+# Vendored SDL2 (staged into android/ by build_android.ps1) + Gradle state
+android/app/jni/SDL/
+android/app/src/main/java/
+android/local.properties
+android/.gradle/
+android/app/.cxx/
+# ...but do commit our launcher icons (override the global *.png ignore)
+!android/app/src/main/res/**/*.png
 
 # Editor / IDE / agent state
 .vscode/

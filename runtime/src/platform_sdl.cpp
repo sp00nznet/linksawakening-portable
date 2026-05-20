@@ -58,6 +58,157 @@ static SDL_GameController* g_gamepad = NULL;
 static SDL_Joystick* g_joystick = NULL;
 
 /* ============================================================================
+ * Android on-screen touch controls
+ * ========================================================================== */
+#ifdef __ANDROID__
+typedef struct { float x, y, w, h; } FRect;
+
+static FRect android_frect(float x, float y, float w, float h) {
+    FRect r; r.x = x; r.y = y; r.w = w; r.h = h; return r;
+}
+
+#define MAX_TOUCH 10
+static struct { SDL_FingerID id; float x, y; bool active; } g_fingers[MAX_TOUCH];
+
+static struct {
+    int   out_w, out_h;
+    FRect dpad, btn_a, btn_b, btn_start, btn_select;
+} g_touch;
+
+/* Touch-only joypad contribution — kept for overlay highlighting. */
+static uint8_t g_touch_dpad = 0xFF;
+static uint8_t g_touch_btns = 0xFF;
+
+static void android_compute_layout(void) {
+    int w = 0, h = 0;
+    SDL_GetRendererOutputSize(g_renderer, &w, &h);
+    g_touch.out_w = w;
+    g_touch.out_h = h;
+    float m  = h * 0.045f;                 /* edge margin       */
+    float dp = h * 0.40f;                  /* d-pad square side */
+    g_touch.dpad = android_frect(m, h - m - dp, dp, dp);
+    float r  = h * 0.115f;                 /* face-button radius */
+    float cy = h - m - r;
+    g_touch.btn_a = android_frect(w - m - 2.0f*r, cy - r, 2.0f*r, 2.0f*r);
+    g_touch.btn_b = android_frect(w - m - 4.4f*r, cy - r, 2.0f*r, 2.0f*r);
+    float sw = h * 0.17f, sh = h * 0.07f;
+    float sy = h - m - sh;
+    g_touch.btn_select = android_frect(w*0.5f - sw - m*0.4f, sy, sw, sh);
+    g_touch.btn_start  = android_frect(w*0.5f + m*0.4f,      sy, sw, sh);
+}
+
+static bool fr_contains(FRect r, float px, float py) {
+    return px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h;
+}
+
+static bool fr_circle(FRect r, float px, float py) {
+    float cx = r.x + r.w * 0.5f, cy = r.y + r.h * 0.5f, rad = r.w * 0.5f;
+    float dx = px - cx, dy = py - cy;
+    return dx*dx + dy*dy <= rad*rad;
+}
+
+static void android_touch_event(SDL_FingerID id, float nx, float ny, int up) {
+    if (!up) {
+        int slot = -1;
+        for (int i = 0; i < MAX_TOUCH; i++) {
+            if (g_fingers[i].active && g_fingers[i].id == id) {
+                g_fingers[i].x = nx; g_fingers[i].y = ny;
+                return;
+            }
+            if (!g_fingers[i].active && slot < 0) slot = i;
+        }
+        if (slot >= 0) {
+            g_fingers[slot].active = true;
+            g_fingers[slot].id = id;
+            g_fingers[slot].x = nx;
+            g_fingers[slot].y = ny;
+        }
+    } else {
+        for (int i = 0; i < MAX_TOUCH; i++)
+            if (g_fingers[i].active && g_fingers[i].id == id)
+                g_fingers[i].active = false;
+    }
+}
+
+/* Hit-test active fingers against the controls; AND the result (active low)
+ * into the joypad globals. */
+static void android_apply_touch(void) {
+    android_compute_layout();
+    g_touch_dpad = 0xFF;
+    g_touch_btns = 0xFF;
+    for (int i = 0; i < MAX_TOUCH; i++) {
+        if (!g_fingers[i].active) continue;
+        float px = g_fingers[i].x * (float)g_touch.out_w;
+        float py = g_fingers[i].y * (float)g_touch.out_h;
+        if (fr_contains(g_touch.dpad, px, py)) {
+            int col = (int)((px - g_touch.dpad.x) / (g_touch.dpad.w / 3.0f));
+            int row = (int)((py - g_touch.dpad.y) / (g_touch.dpad.h / 3.0f));
+            if (col < 0) col = 0;
+            if (col > 2) col = 2;
+            if (row < 0) row = 0;
+            if (row > 2) row = 2;
+            if (col == 0) g_touch_dpad &= ~0x02;   /* Left  */
+            if (col == 2) g_touch_dpad &= ~0x01;   /* Right */
+            if (row == 0) g_touch_dpad &= ~0x04;   /* Up    */
+            if (row == 2) g_touch_dpad &= ~0x08;   /* Down  */
+        }
+        if (fr_circle(g_touch.btn_a, px, py))        g_touch_btns &= ~0x01;
+        if (fr_circle(g_touch.btn_b, px, py))        g_touch_btns &= ~0x02;
+        if (fr_contains(g_touch.btn_select, px, py)) g_touch_btns &= ~0x04;
+        if (fr_contains(g_touch.btn_start,  px, py)) g_touch_btns &= ~0x08;
+    }
+    g_joypad_dpad    &= g_touch_dpad;
+    g_joypad_buttons &= g_touch_btns;
+}
+
+static void android_fill_circle(int cx, int cy, int rad,
+                                Uint8 cr, Uint8 cg, Uint8 cb, Uint8 ca) {
+    SDL_SetRenderDrawColor(g_renderer, cr, cg, cb, ca);
+    for (int dy = -rad; dy <= rad; dy++) {
+        int dx = (int)SDL_sqrt((double)(rad*rad - dy*dy));
+        SDL_RenderDrawLine(g_renderer, cx - dx, cy + dy, cx + dx, cy + dy);
+    }
+}
+
+static void android_fill_rect(FRect r, Uint8 cr, Uint8 cg, Uint8 cb, Uint8 ca) {
+    SDL_SetRenderDrawColor(g_renderer, cr, cg, cb, ca);
+    SDL_Rect rc = { (int)r.x, (int)r.y, (int)r.w, (int)r.h };
+    SDL_RenderFillRect(g_renderer, &rc);
+}
+
+/* Draw the translucent control overlay; pressed controls light up. */
+static void android_draw_overlay(void) {
+    android_compute_layout();
+    SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+    const Uint8 idle = 70, lit = 165;
+
+    FRect d = g_touch.dpad;
+    float t = d.w / 3.0f;
+    android_fill_rect(android_frect(d.x + t, d.y, t, d.h), 235,235,235, idle);
+    android_fill_rect(android_frect(d.x, d.y + t, d.w, t), 235,235,235, idle);
+    if (!(g_touch_dpad & 0x04))
+        android_fill_rect(android_frect(d.x + t, d.y, t, t), 255,255,255, lit);
+    if (!(g_touch_dpad & 0x08))
+        android_fill_rect(android_frect(d.x + t, d.y + 2*t, t, t), 255,255,255, lit);
+    if (!(g_touch_dpad & 0x02))
+        android_fill_rect(android_frect(d.x, d.y + t, t, t), 255,255,255, lit);
+    if (!(g_touch_dpad & 0x01))
+        android_fill_rect(android_frect(d.x + 2*t, d.y + t, t, t), 255,255,255, lit);
+
+    int ar = (int)(g_touch.btn_a.w * 0.5f);
+    android_fill_circle((int)(g_touch.btn_a.x) + ar, (int)(g_touch.btn_a.y) + ar,
+                        ar, 235, 90, 90,  (g_touch_btns & 0x01) ? idle : lit);
+    android_fill_circle((int)(g_touch.btn_b.x) + ar, (int)(g_touch.btn_b.y) + ar,
+                        ar, 235, 200, 90, (g_touch_btns & 0x02) ? idle : lit);
+
+    android_fill_rect(g_touch.btn_select, 200,200,200,
+                      (g_touch_btns & 0x04) ? idle : lit);
+    android_fill_rect(g_touch.btn_start,  200,200,200,
+                      (g_touch_btns & 0x08) ? idle : lit);
+}
+#endif /* __ANDROID__ */
+
+/* ============================================================================
  * Automation State
  * ========================================================================== */
 #include <stdio.h>
@@ -303,7 +454,26 @@ bool gb_platform_init(int scale) {
         SDL_PauseAudioDevice(g_audio_device, 0); /* Start playing */
     }
     
+#ifdef __ANDROID__
+    /* Phone game — lock to landscape before the window is created. */
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
+
     fprintf(stderr, "[SDL] Creating window...\n");
+#ifdef __ANDROID__
+    /* Android: a single fullscreen window matching the device surface.
+     * Passing a small size (or RESIZABLE) makes SDL pin the SurfaceView to
+     * that size, leaving the game in a corner — so go fullscreen instead. */
+    SDL_DisplayMode dm;
+    if (SDL_GetDesktopDisplayMode(0, &dm) != 0) { dm.w = 1280; dm.h = 720; }
+    g_window = SDL_CreateWindow(
+        "Link's Awakening Recompiled",
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        dm.w, dm.h,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN
+    );
+#else
     g_window = SDL_CreateWindow(
         "Link's Awakening Recompiled",
         SDL_WINDOWPOS_CENTERED,
@@ -312,6 +482,7 @@ bool gb_platform_init(int scale) {
         GB_SCREEN_HEIGHT * g_scale,
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
+#endif
     
     if (!g_window) {
         fprintf(stderr, "[SDL] SDL_CreateWindow failed: %s\n", SDL_GetError());
@@ -360,9 +531,11 @@ bool gb_platform_init(int scale) {
     // Initialize asset viewer (needs renderer for texture creation)
     asset_viewer_init(g_renderer);
 
-    /* Apply saved window scale */
+#ifndef __ANDROID__
+    /* Apply saved window scale (desktop only — Android stays fullscreen) */
     SDL_SetWindowSize(g_window, GB_SCREEN_WIDTH * g_scale, GB_SCREEN_HEIGHT * g_scale);
     SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+#endif
 
     g_texture = SDL_CreateTexture(
         g_renderer,
@@ -446,6 +619,15 @@ bool gb_platform_poll_events(GBContext* ctx) {
                 gb_platform_load_state(ctx);
             }
         }
+
+#ifdef __ANDROID__
+        if (event.type == SDL_FINGERDOWN || event.type == SDL_FINGERMOTION)
+            android_touch_event(event.tfinger.fingerId, event.tfinger.x,
+                                event.tfinger.y, 0);
+        else if (event.type == SDL_FINGERUP)
+            android_touch_event(event.tfinger.fingerId, event.tfinger.x,
+                                event.tfinger.y, 1);
+#endif
 
         /* Gamepad hotplug */
         if (event.type == SDL_CONTROLLERDEVICEADDED && !g_gamepad) {
@@ -562,6 +744,11 @@ bool gb_platform_poll_events(GBContext* ctx) {
             }
         }
     }
+
+#ifdef __ANDROID__
+    /* ---- On-screen touch controls ---- */
+    android_apply_touch();
+#endif
 
     /* ---- Automation script inputs ---- */
     for (int i = 0; i < g_script_count; i++) {
@@ -704,6 +891,28 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
     }
 #endif
 
+    /* Android: present the GB image letterboxed (preserve 10:9 aspect);
+     * on every other platform NULL stretches to the whole renderer. */
+    SDL_Rect android_dst;
+    SDL_Rect* present_dst = NULL;
+#ifdef __ANDROID__
+    {
+        int ow = 0, oh = 0;
+        SDL_GetRendererOutputSize(g_renderer, &ow, &oh);
+        float ga = (float)GB_SCREEN_WIDTH / (float)GB_SCREEN_HEIGHT;
+        if ((float)ow / (float)oh > ga) {
+            android_dst.h = oh;
+            android_dst.w = (int)(oh * ga);
+        } else {
+            android_dst.w = ow;
+            android_dst.h = (int)(ow / ga);
+        }
+        android_dst.x = (ow - android_dst.w) / 2;
+        android_dst.y = (oh - android_dst.h) / 2;
+        present_dst = &android_dst;
+    }
+#endif
+
     /* Scale2x filter: produce 320x288 output with smoothed pixel edges */
     if (g_filter_mode == 2) {
         if (!g_texture_2x) {
@@ -743,7 +952,7 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
         SDL_UnlockTexture(g_texture_2x);
 
         SDL_RenderClear(g_renderer);
-        SDL_RenderCopy(g_renderer, g_texture_2x, NULL, NULL);
+        SDL_RenderCopy(g_renderer, g_texture_2x, NULL, present_dst);
     } else {
         /* Nearest or Bilinear: use 1x texture */
         void* pixels;
@@ -753,7 +962,7 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
         SDL_UnlockTexture(g_texture);
 
         SDL_RenderClear(g_renderer);
-        SDL_RenderCopy(g_renderer, g_texture, NULL, NULL);
+        SDL_RenderCopy(g_renderer, g_texture, NULL, present_dst);
     }
 
     // ImGui Frame
@@ -775,8 +984,10 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
     int new_scale = menu_gui_get_scale();
     if (new_scale != g_scale) {
         g_scale = new_scale;
+#ifndef __ANDROID__
         SDL_SetWindowSize(g_window, GB_SCREEN_WIDTH * g_scale, GB_SCREEN_HEIGHT * g_scale);
         SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+#endif
     }
 
     bool new_vsync = menu_gui_get_vsync() != 0;
@@ -817,6 +1028,10 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
 #ifdef LA_HAS_IMGUI
     ImGui::Render();
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), g_renderer);
+#endif
+
+#ifdef __ANDROID__
+    android_draw_overlay();
 #endif
 
     SDL_RenderPresent(g_renderer);
@@ -865,6 +1080,13 @@ void gb_platform_set_title(const char* title) {
 #define SS_IO_SIZE     0x81
 
 static void get_state_path(char* buf, size_t size) {
+#ifdef __ANDROID__
+    const char* astore = SDL_AndroidGetInternalStoragePath();
+    if (astore) {
+        snprintf(buf, size, "%s/savestate.bin", astore);
+        return;
+    }
+#endif
     char* base = SDL_GetBasePath();
     if (base) {
         snprintf(buf, size, "%ssavestate.bin", base);
@@ -1048,6 +1270,17 @@ void gb_platform_load_state(GBContext* ctx) {
  * ========================================================================== */
 
 static void sdl_get_save_path(char* buffer, size_t size, const char* rom_name) {
+#ifdef __ANDROID__
+    {
+        const char* astore = SDL_AndroidGetInternalStoragePath();
+        if (astore) {
+            const char* bn = strrchr(rom_name, '/');
+            bn = bn ? bn + 1 : rom_name;
+            snprintf(buffer, size, "%s/%s.sav", astore, bn);
+            return;
+        }
+    }
+#endif
     char* base_path = SDL_GetBasePath();
     if (base_path) {
         // Extract just the filename from rom_name to avoid path traversal issues

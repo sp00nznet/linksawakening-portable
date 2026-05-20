@@ -12,6 +12,7 @@ and how to run each one.
 - [PlayStation 3](#playstation-3)
 - [Nintendo 3DS](#nintendo-3ds)
 - [Nintendo Wii](#nintendo-wii)
+- [Android](#android)
 - [Parked / blocked targets](#parked--blocked-targets)
 
 ---
@@ -236,6 +237,70 @@ Compiles `rom.c` + runtime + `platform_wii.c` with `powerpc-eabi-gcc`
   directly.
 - **Hardware:** copy `linksawakening.dol` to `/apps/linksawakening/boot.dol`
   on the SD card of a Wii running the Homebrew Channel and launch it there.
+
+---
+
+## Android
+
+ARM64 / x86-64 little-endian. Reuses the SDL2 backend (`platform_sdl.cpp`)
+via SDL2's Android port — the same backend as the Windows and PS4 builds.
+On-screen touch controls (d-pad + A/B/Start/Select) are drawn by
+`platform_sdl.cpp` behind `#ifdef __ANDROID__`; ImGui + multiplayer are off.
+
+The Gradle project lives at `android/`. SDL2 is **not vendored** in the
+repo — `build_android.ps1` stages an SDL2 source tree into it at build time.
+This build runs natively on Windows (not WSL).
+
+### One-time toolchain setup (Windows)
+
+1. **JDK 17+** — e.g. [Eclipse Temurin](https://adoptium.net/).
+2. **Android SDK command-line tools** — download from the
+   [Android Studio page](https://developer.android.com/studio#command-line-tools-only),
+   unzip so that `sdkmanager.bat` ends up at
+   `D:\Android\Sdk\cmdline-tools\latest\bin\`, then:
+
+   ```powershell
+   $sdk = "D:\Android\Sdk"
+   $sm  = "$sdk\cmdline-tools\latest\bin\sdkmanager.bat"
+   & $sm --sdk_root=$sdk --licenses
+   & $sm --sdk_root=$sdk platform-tools "platforms;android-34" `
+       "build-tools;34.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+   ```
+
+3. **SDL2 source** — download the SDL2 2.32.x source release from
+   [libsdl.org](https://github.com/libsdl-org/SDL/releases) and unzip it
+   (e.g. to `D:\ports\android-build\SDL2-2.32.10`).
+
+### Build
+
+```powershell
+powershell -File cmake\test\build_android.ps1 `
+    -SdlSrc D:\ports\android-build\SDL2-2.32.10 -SdkDir D:\Android\Sdk
+```
+
+The script stages SDL2 into `android/`, then runs `gradlew assembleDebug` —
+the NDK CMake build compiles `rom.c` + the runtime + `platform_sdl.cpp` into
+`libmain.so`. The default ABI is `x86_64` (the emulator); add `arm64-v8a` to
+`abiFilters` in `android/app/build.gradle` for physical phones.
+
+**Output:** `build-android/linksawakening.apk`.
+
+### Run
+
+- **Emulator** — create an AVD, boot it, install:
+
+  ```powershell
+  $sdk = "D:\Android\Sdk"
+  & "$sdk\cmdline-tools\latest\bin\sdkmanager.bat" --sdk_root=$sdk `
+      emulator "system-images;android-34;default;x86_64"
+  & "$sdk\cmdline-tools\latest\bin\avdmanager.bat" create avd `
+      -n la_test -k "system-images;android-34;default;x86_64" -d pixel_6
+  & "$sdk\emulator\emulator.exe" -avd la_test
+  & "$sdk\platform-tools\adb.exe" install -r build-android\linksawakening.apk
+  ```
+
+- **Device** — `adb install build-android\linksawakening.apk` over USB
+  (build with the `arm64-v8a` ABI for a physical phone).
 
 ---
 
