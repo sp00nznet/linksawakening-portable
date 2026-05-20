@@ -91,10 +91,12 @@ void gb_interpret(GBContext* ctx, uint16_t addr) {
     ctx->pc = addr;
 
     /* Interpreter entry logging - only log WRAM/unusual entries */
+#ifdef GB_DEBUG
     if (addr >= 0xC000 && addr < 0xFE00) {
         fprintf(stderr, "[INTERP] WRAM exec addr=0x%04X bank=%d A=%02X SP=%04X HL=%04X\n",
                 addr, ctx->rom_bank, ctx->a, ctx->sp, ctx->hl);
     }
+#endif
     gbrt_log_trace(ctx, (addr < 0x4000) ? 0 : ctx->rom_bank, addr);
 
     uint32_t instructions_executed = 0;
@@ -180,7 +182,9 @@ void gb_interpret(GBContext* ctx, uint16_t addr) {
         }
         if (ctx->pc >= 0xFE00 && ctx->pc < 0xFF00 && ctx->pc >= 0xFEA0) {
             /* Unusable OAM area */
+#ifdef GB_DEBUG
             fprintf(stderr, "[INTERP] ERROR: PC in unusable memory at 0x%04X, returning to dispatch\n", ctx->pc);
+#endif
             return;
         }
 
@@ -195,6 +199,10 @@ void gb_interpret(GBContext* ctx, uint16_t addr) {
              //        gb_read8(ctx, 0xFFBA), gb_read8(ctx, 0xFFBB),
              //        gb_read8(ctx, 0xFFBC), gb_read8(ctx, 0xFFBD));
              // }
+#ifdef GB_DEBUG
+             /* FFC0 HRAM trampoline trace. Very high frequency — gated to
+              * debug builds. On consoles (3DS) the unconditional stderr
+              * spam previously dropped the frame rate to ~1/3. */
              if (ctx->pc == 0xFFC0) {
                  fprintf(stderr, "[HRAM] FFC0 trampoline: FFF2=%02X A=%02X bank=%d SP=%04X ret=%04X\n",
                      gb_read8(ctx, 0xFFF2), ctx->a, ctx->rom_bank, ctx->sp,
@@ -206,6 +214,7 @@ void gb_interpret(GBContext* ctx, uint16_t addr) {
                      gb_read8(ctx, 0xFFC8), gb_read8(ctx, 0xFFC9), gb_read8(ctx, 0xFFCA), gb_read8(ctx, 0xFFCB),
                      gb_read8(ctx, 0xFFCC), gb_read8(ctx, 0xFFCD), gb_read8(ctx, 0xFFCE), gb_read8(ctx, 0xFFCF));
              }
+#endif
              uint8_t op = gb_read8(ctx, ctx->pc);
              if (op == 0xE0 && gb_read8(ctx, ctx->pc + 1) == 0x46) {
                  // DBG_GENERAL("Interpreter: Intercepted HRAM DMA at 0x%04X", ctx->pc);

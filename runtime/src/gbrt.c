@@ -526,7 +526,9 @@ void gb_write8(GBContext* ctx, uint16_t addr, uint8_t value) {
                 uint8_t old = ctx->ram_enabled;
                 ctx->ram_enabled = ((value & 0x0F) == 0x0A);
                 if (old != ctx->ram_enabled) {
+#ifdef GB_DEBUG
                     fprintf(stderr, "[MBC5] RAM %s (wrote 0x%02X to 0x%04X)\n", ctx->ram_enabled ? "ENABLED" : "DISABLED", value, addr);
+#endif
                 }
             } else if (addr < 0x3000) {
                 /* ROM Bank Number (lower 8 bits) */
@@ -534,8 +536,10 @@ void gb_write8(GBContext* ctx, uint16_t addr, uint8_t value) {
                 /* Mask to actual ROM size to prevent out-of-bounds reads */
                 uint16_t max_bank = (ctx->rom_size / 0x4000);
                 if (max_bank > 0 && new_bank >= max_bank) {
+#ifdef GB_DEBUG
                     fprintf(stderr, "[MBC5] Bank %d out of range (max %d), masking to %d. PC=%04X A=%02X value=%02X old_bank=%d\n",
                             new_bank, max_bank - 1, new_bank % max_bank, ctx->pc, ctx->a, value, ctx->rom_bank);
+#endif
                     new_bank = new_bank % max_bank;
                 }
                 ctx->rom_bank = new_bank;
@@ -616,6 +620,7 @@ void gb_write8(GBContext* ctx, uint16_t addr, uint8_t value) {
     if (addr < 0xE000) {
         uint32_t wram_off = (ctx->wram_bank * WRAM_BANK_SIZE) + (addr - 0xD000);
         /* Watch game state variables */
+#ifdef GB_DEBUG
         if (addr == 0xDB95 && value != ctx->wram[wram_off]) {
             fprintf(stderr, "[STATE] wGameplayType %02X→%02X PC=0x%04X bank=%d SP=%04X\n",
                     ctx->wram[wram_off], value, ctx->pc, ctx->rom_bank, ctx->sp);
@@ -631,6 +636,7 @@ void gb_write8(GBContext* ctx, uint16_t addr, uint8_t value) {
                     gb_read8(ctx, 0xD6FE), gb_read8(ctx, 0xD6FF),
                     gb_read8(ctx, 0xDB96), gb_read8(ctx, 0xFFF2));
         }
+#endif
         ctx->wram[wram_off] = value;
         return;
     }
@@ -1168,6 +1174,7 @@ uint32_t gb_run_frame(GBContext* ctx) {
     
     static int fcount = 0;
     fcount++;
+#ifdef GB_DEBUG
     if (fcount % 60 == 0) {
         /* DB95 is at WRAM offset 0x1B95 (0xDB95 - 0xC000) */
         uint8_t gpt = ctx->wram[0x1B95];
@@ -1175,6 +1182,7 @@ uint32_t gb_run_frame(GBContext* ctx) {
         fprintf(stderr, "[FRAME] Frame %d, Cycles: %u, GameplayType=%02X/%02X\n",
                 fcount, ctx->cycles, gpt, gps);
     }
+#endif
 
     while (!ctx->frame_done) {
         gb_handle_interrupts(ctx);
