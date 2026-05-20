@@ -4,7 +4,9 @@
 #include "hwtrace.h"
 #ifdef GB_HAS_SDL2
 #include "platform_sdl.h"
+#ifdef LA_HAS_MULTIPLAYER
 #include "multiplayer/mp_session.h"
+#endif
 #endif
 #include <stdio.h>
 #include <stdio.h>
@@ -60,6 +62,7 @@ int main(int argc, char* argv[]) {
     // Run the game loop
     int frame_count = 0;
     while (1) {
+#ifdef LA_HAS_MULTIPLAYER
         if (mp_session_is_client_connected()) {
             /* Client mode: don't run local game, just service network
              * and display framebuffers received from the host. */
@@ -69,19 +72,20 @@ int main(int argc, char* argv[]) {
             if (fb) gb_platform_render_frame(fb);
             gb_platform_vsync();
             frame_count++;
-        } else {
-            /* Normal mode (solo or host): run local game */
-            gb_run_frame(ctx);
-            if (!gb_platform_poll_events(ctx)) break;
-            if (ctx->frame_done) {
-                const uint32_t* fb = gb_get_framebuffer(ctx);
-                if (fb) gb_platform_render_frame(fb);
-                gb_reset_frame(ctx);
-                ctx->stopped = 0;
-                gb_platform_vsync();
-                frame_count++;
-                if (max_frames > 0 && frame_count >= max_frames) break;
-            }
+            continue;
+        }
+#endif
+        /* Normal mode (solo or host): run local game */
+        gb_run_frame(ctx);
+        if (!gb_platform_poll_events(ctx)) break;
+        if (ctx->frame_done) {
+            const uint32_t* fb = gb_get_framebuffer(ctx);
+            if (fb) gb_platform_render_frame(fb);
+            gb_reset_frame(ctx);
+            ctx->stopped = 0;
+            gb_platform_vsync();
+            frame_count++;
+            if (max_frames > 0 && frame_count >= max_frames) break;
         }
     }
     gb_platform_shutdown();

@@ -16,9 +16,11 @@
 
 #ifdef GB_HAS_SDL2
 #include <SDL.h>
+#ifdef LA_HAS_IMGUI
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_sdlrenderer2.h"
+#endif
 
 /* ============================================================================
  * SDL State
@@ -90,11 +92,21 @@ static void parse_buttons(const char* btn_str, uint8_t* dpad, uint8_t* buttons) 
     if (strchr(btn_str, 'T')) *buttons &= ~0x04; /* Select (T for selecT) */
 }
 
+/* Portable strdup — some console libc headers (e.g. OpenOrbis/PS4) don't
+ * declare strdup without feature macros. */
+static char* gb_strdup(const char* s) {
+    if (!s) return NULL;
+    size_t n = strlen(s) + 1;
+    char* p = (char*)malloc(n);
+    if (p) memcpy(p, s, n);
+    return p;
+}
+
 void gb_platform_set_input_script(const char* script) {
     // Format: frame:buttons:duration,...
     if (!script) return;
-    
-    char* copy = strdup(script);
+
+    char* copy = gb_strdup(script);
     char* token = strtok(copy, ",");
     g_script_count = 0;
     
@@ -116,7 +128,7 @@ void gb_platform_set_input_script(const char* script) {
 
 void gb_platform_set_dump_frames(const char* frames) {
     if (!frames) return;
-    char* copy = strdup(frames);
+    char* copy = gb_strdup(frames);
     char* token = strtok(copy, ",");
     g_dump_count = 0;
     while (token && g_dump_count < MAX_DUMP_FRAMES) {
@@ -182,9 +194,11 @@ void gb_platform_shutdown(void) {
     
     asset_viewer_shutdown();
 
+#ifdef LA_HAS_IMGUI
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
+#endif
 
     if (g_texture_2x) {
         SDL_DestroyTexture(g_texture_2x);
@@ -318,6 +332,7 @@ bool gb_platform_init(int scale) {
     
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
 
+#ifdef LA_HAS_IMGUI
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -328,6 +343,7 @@ bool gb_platform_init(int scale) {
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForSDLRenderer(g_window, g_renderer);
     ImGui_ImplSDLRenderer2_Init(g_renderer);
+#endif
 
     // Initialize menu system (applies theme, loads saved settings)
     menu_gui_init();
@@ -394,7 +410,9 @@ bool gb_platform_poll_events(GBContext* ctx) {
     /* ---- Process SDL events (for ImGui, window, hotplug) ---- */
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+#ifdef LA_HAS_IMGUI
         ImGui_ImplSDL2_ProcessEvent(&event);
+#endif
         if (event.type == SDL_QUIT) return false;
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE
             && event.window.windowID == SDL_GetWindowID(g_window))
@@ -690,9 +708,11 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
     }
 
     // ImGui Frame
+#ifdef LA_HAS_IMGUI
     ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
+#endif
 
 #ifdef LA_HAS_MULTIPLAYER
     /* Update multiplayer session */
@@ -713,7 +733,12 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
     bool new_vsync = menu_gui_get_vsync() != 0;
     if (new_vsync != g_vsync) {
         g_vsync = new_vsync;
+#if SDL_VERSION_ATLEAST(2, 0, 18)
         SDL_RenderSetVSync(g_renderer, g_vsync ? 1 : 0);
+#else
+        /* Older SDL2 (e.g. OpenOrbis's PS4 port) has no runtime vsync
+         * toggle — vsync is fixed at renderer-creation time. */
+#endif
     }
 
     int new_filter = menu_gui_get_filter_mode();
@@ -740,8 +765,10 @@ void gb_platform_render_frame(const uint32_t* framebuffer) {
         menu_gui_clear_load_state_request();
     }
 
+#ifdef LA_HAS_IMGUI
     ImGui::Render();
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), g_renderer);
+#endif
 
     SDL_RenderPresent(g_renderer);
 }
