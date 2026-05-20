@@ -11,6 +11,7 @@ and how to run each one.
 - [PlayStation 4](#playstation-4)
 - [PlayStation 3](#playstation-3)
 - [Nintendo 3DS](#nintendo-3ds)
+- [Nintendo Wii](#nintendo-wii)
 - [Parked / blocked targets](#parked--blocked-targets)
 
 ---
@@ -195,6 +196,46 @@ links against libctru, runs `3dsxtool`.
 - **Hardware:** copy `linksawakening.3dsx` to `/3ds/` on the SD card of a
   modded 3DS and launch it from the Homebrew Launcher. Confirmed working on
   a New 2DS XL.
+
+---
+
+## Nintendo Wii
+
+PowerPC big-endian. Native libogc backend (`platform_wii.c`). The same
+big-endian register-pair fix in `gbrt.h` that carries the PS3 build makes
+the recompiled `rom.c` correct here. Video is the YUY2 external
+framebuffer (XFB); input accepts a GameCube controller or a sideways Wii
+Remote; audio is ASND; saves go to `sd:/linksawakening/`.
+
+### One-time toolchain setup (in WSL Debian)
+
+The Wii toolchain is `devkitPPC` + `libogc`, installed via the same
+`dkp-pacman` set up for the 3DS:
+
+```bash
+sudo dkp-pacman -S --noconfirm wii-dev
+```
+
+(If you have not installed `dkp-pacman` yet, do the bootstrap steps from
+the [Nintendo 3DS](#nintendo-3ds) section first.)
+
+### Build
+
+```powershell
+wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_wii.sh
+```
+
+Compiles `rom.c` + runtime + `platform_wii.c` with `powerpc-eabi-gcc`
+(`-mrvl -mcpu=750`), links against libogc, runs `elf2dol`.
+
+**Output:** `build-wii/linksawakening.dol` (~24 MB).
+
+### Run
+
+- **Emulator:** `Dolphin.exe -e build-wii/linksawakening.dol` — boots
+  directly.
+- **Hardware:** copy `linksawakening.dol` to `/apps/linksawakening/boot.dol`
+  on the SD card of a Wii running the Homebrew Channel and launch it there.
 
 ---
 
