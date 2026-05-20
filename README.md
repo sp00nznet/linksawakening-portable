@@ -71,38 +71,37 @@ toolchain file (added in Phase 4).
 
 ---
 
-## Phase plan
+## Roadmap
 
-| # | Phase                                  | Deliverable                                                          | Status      |
-| - | -------------------------------------- | -------------------------------------------------------------------- | ----------- |
-| 0  | Repo scaffold                              | Private GH repo + working tree, README, .gitignore, CMakeLists       | **done**   |
-| 1  | Windows reference build from new tree      | `rom.exe` builds & matches upstream behavior                         | **done**   |
-| 2  | Audit PAL contract; document gaps          | docs/PAL_AUDIT.md catalogues every direct SDL/ImGui/stdio call       | **done**   |
-| 3  | Endianness + 32-bit audit                  | docs/ENDIAN_AUDIT.md: core engine BE-safe; one critical fix needed in `gbrt.h` register unions | **done** |
-| 4  | Xbox 360 toolchain                         | libxenon at /usr/local/xenon (WSL Debian); CMake toolchain file in cmake/; hello-world XEX loads + executes in Xenia | **done** |
-| 5a | Upstream patches in gb-recompiled          | `LA_HAS_MULTIPLAYER` + `LA_HAS_IMGUI` gates; plain-C stubs; AF/BC/DE/HL register-pair BE swap in `gbrt.h` | **done** |
-| 5  | `platform_libxenon.c`                      | 13 `gb_platform_*` + `GBPlatformCallbacks`; console-blit video, USB gamepad, ring-buffered audio, FATFS saves. Test XEX runs in Xenia. | **done** |
-| —  | Xbox 360 full-game XEX                     | **PARKED** — full-game XEX hits a memory error in Xenia (115 MB `rom.c` vs Xenia's homebrew memory model) | parked |
-| P1 | PS4 toolchain (OpenOrbis)                  | `cmake/toolchain-ps4.cmake`; clang `x86_64-pc-freebsd12-elf`; libxenon-style probe + build scripts in `cmake/test/` | **done** |
-| P2 | PS4 full-game build                        | `rom.c` + runtime + `platform_sdl.cpp` (OpenOrbis SDL2) → `eboot.bin` (18 MB) | **done** |
-| P3 | PS4 `.pkg` packaging                       | `create-fself` → `create-gp4` → `PkgTool.Core` → **`linksawakening.pkg`** (20 MB) | **done** |
-| P4 | PS4 install + hardware test                | `.pkg` installed on the jailbroken PS4 — boots + plays. Raw-`SDL_Joystick` input fix for the DualShock | **done** |
-| D1 | 3DS toolchain + backend                    | devkitARM + libctru; native `platform_3ds.c` (gfx/hid/ndsp/sdmc)               | **done**   |
-| D2 | 3DS full-game build                        | `rom.c` + runtime + `platform_3ds.c` → `linksawakening.3dsx` (22 MB)            | **done**   |
-| D3 | 3DS test in emulator / hardware            | Runs in Azahar + on a real New 2DS XL — reaches gameplay                       | **done**   |
-| S1 | PS3 toolchain (PSL1GHT)                     | ps3dev Docker image; `cmake/test/build_ps3.sh`                                 | **done**   |
-| S2 | PS3 full-game build                        | `rom.c` + runtime + `platform_psl1ght.c` → fake-self `EBOOT.BIN` (25 MB)        | **done**   |
-| S3 | PS3 test in RPCS3 / hardware               | Boots in RPCS3 at ~56 FPS — title screen + gameplay render correctly           | **done**   |
-| W  | WebAssembly (Emscripten)                   | **BLOCKED** — recompiler emits functions over wasm's 7.65 MB per-function cap   | blocked    |
-| 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so settings persist on non-stdio targets           | pending    |
+**Foundation** — shared groundwork, all done:
 
-Phase 2 in the original plan was "extract a PAL." That work was already done
-by upstream — `platform_sdl.h` is the PAL. Phase 2 was an audit confirming no
-runtime code escapes the contract.
+- Repo scaffold and the Windows reference build.
+- PAL contract audit — [docs/PAL_AUDIT.md](docs/PAL_AUDIT.md): the runtime
+  already exposes a clean platform interface; the core engine makes no
+  direct SDL/ImGui calls.
+- Endianness + 32-bit audit — [docs/ENDIAN_AUDIT.md](docs/ENDIAN_AUDIT.md):
+  the one fix big-endian targets need is the AF/BC/DE/HL register-pair
+  layout in `gbrt.h`.
+- gb-recompiled cross-compile patches: `LA_HAS_MULTIPLAYER` / `LA_HAS_IMGUI`
+  build gates, plain-C menu/asset-viewer stubs, and the big-endian
+  register-pair fix — so the runtime builds for any target.
 
-The phase plan pivoted mid-project: the Xbox 360 target was parked after the
-full-game XEX hit a Xenia memory error, and **PS4 + 3DS** became the focus
-(see the P-rows above).
+**Platforms** — see the [status table](#linksawakening-portable) above:
+PS4, PS3, and 3DS are playable; Xbox 360 is parked; WebAssembly is blocked.
+
+**Open work:**
+
+- **WebAssembly** — the recompiler emits functions larger than WebAssembly's
+  ~7.65 MB per-function limit. Needs the recompiler to split oversized
+  functions (`gb_dispatch` and a few giant recompiled routines) before a
+  wasm build can link.
+- **Xbox 360** — `platform_libxenon.c` is written and a hello-world XEX runs
+  in Xenia, but the full-game XEX hits a Xenia memory error. Likely needs
+  real RGH/JTAG hardware to validate.
+- **Settings persistence** — a `gb_platform_fs_read/write` PAL extension so
+  rebindable controls survive on targets without plain stdio.
+- **More targets** — Wii, PSP, and others are feasible with the same
+  one-backend-per-platform pattern; none started.
 
 ---
 
