@@ -18,7 +18,7 @@ export OO_PS4_TOOLCHAIN="$HOME/PS4Toolchain"
 TC="$OO_PS4_TOOLCHAIN"
 LA="/mnt/d/ports/la360"
 RT="$LA/runtime"
-OUT="${1:-/tmp/la360-ps4}"
+OUT="${1:-$HOME/la360-ps4}"   # ~ persists across WSL restarts; /tmp does not
 
 TARGET="x86_64-pc-freebsd12-elf"
 CC="clang"

@@ -18,21 +18,21 @@ Built on:
   the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
   at `runtime/`.
 
-> **Status:** Phases 0–5 done. Windows reference build (25.26 MB rom.exe)
-> unchanged. PAL + endianness audited. Xbox 360 toolchain live
-> (libxenon, xenon-gcc 9.2.0). gb-recompiled patched for cross-compile
-> (LA_HAS_IMGUI / LA_HAS_MULTIPLAYER gates, plain-C stubs, BE register
-> fix). **`platform_libxenon.c` is written** — all 13 `gb_platform_*` +
-> the audio/SRAM callbacks, against libxenon's xenos/sound/input APIs.
-> It compiles under xenon-gcc, links into `libgbrt-xenon.a`, and a test
-> XEX exercising it loads + executes in Xenia without error. Phase 6
-> (settings PAL extension) / Phase 7 (wire the real game + iterate to
-> playable) next.
+> **Status:** Windows reference build works (25.2 MB rom.exe). Two console
+> ports built:
 >
-> **Not yet verified:** that the test pattern actually *renders visibly*
-> in the Xenia window — libxenon's console output isn't captured in
-> Xenia's stdout log, so on-screen output needs a human looking at the
-> emulator window, or testing on real RGH/JTAG hardware.
+> - **PS4** — full game builds end to end. `rom.c` (115 MB) compiles
+>   unchanged (x86-64 LE), reuses `platform_sdl.cpp` via OpenOrbis's SDL2
+>   port, packages to an installable **`linksawakening.pkg`** (20 MB).
+>   ImGui off (OpenOrbis SDL2 predates 2.0.17); multiplayer off. Ready to
+>   install + test on a jailbroken PS4.
+> - **Xbox 360 — PARKED.** `platform_libxenon.c` written + a test XEX
+>   builds, but the full-game XEX hits a memory error in Xenia (likely
+>   the 115 MB `rom.c` vs Xenia's homebrew memory model). Set aside in
+>   favour of PS4 / 3DS.
+>
+> Next: install + test the PS4 `.pkg` on hardware; then the 3DS port
+> (devkitARM + libctru).
 
 ---
 
@@ -70,15 +70,24 @@ toolchain file (added in Phase 4).
 | 2  | Audit PAL contract; document gaps          | docs/PAL_AUDIT.md catalogues every direct SDL/ImGui/stdio call       | **done**   |
 | 3  | Endianness + 32-bit audit                  | docs/ENDIAN_AUDIT.md: core engine BE-safe; one critical fix needed in `gbrt.h` register unions | **done** |
 | 4  | Xbox 360 toolchain                         | libxenon at /usr/local/xenon (WSL Debian); CMake toolchain file in cmake/; hello-world XEX loads + executes in Xenia | **done** |
-| 5a | Upstream patches in gb-recompiled          | `#ifdef LA_HAS_MULTIPLAYER` + `LA_HAS_IMGUI` guards in `platform_sdl.cpp` + `menu_gui.cpp`; **AF/BC/DE/HL register union BE swap in `gbrt.h:84-99`** | pending |
-| 5  | `platform_libxenon.c`                      | 13 `gb_platform_*` + `GBPlatformCallbacks`; console-blit video, USB gamepad, ring-buffered audio, FATFS saves. Compiles + links + test XEX runs in Xenia. | **done** |
-| 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so menu_gui + mp_menu can persist `bindings.cfg` on non-stdio targets | pending |
-| 7  | Iterate to playable in Xenia               | Boot + title screen + intro rendering correctly                      | pending    |
-| 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS          | pending    |
+| 5a | Upstream patches in gb-recompiled          | `LA_HAS_MULTIPLAYER` + `LA_HAS_IMGUI` gates; plain-C stubs; AF/BC/DE/HL register-pair BE swap in `gbrt.h` | **done** |
+| 5  | `platform_libxenon.c`                      | 13 `gb_platform_*` + `GBPlatformCallbacks`; console-blit video, USB gamepad, ring-buffered audio, FATFS saves. Test XEX runs in Xenia. | **done** |
+| —  | Xbox 360 full-game XEX                     | **PARKED** — full-game XEX hits a memory error in Xenia (115 MB `rom.c` vs Xenia's homebrew memory model) | parked |
+| P1 | PS4 toolchain (OpenOrbis)                  | `cmake/toolchain-ps4.cmake`; clang `x86_64-pc-freebsd12-elf`; libxenon-style probe + build scripts in `cmake/test/` | **done** |
+| P2 | PS4 full-game build                        | `rom.c` + runtime + `platform_sdl.cpp` (OpenOrbis SDL2) → `eboot.bin` (18 MB) | **done** |
+| P3 | PS4 `.pkg` packaging                       | `create-fself` → `create-gp4` → `PkgTool.Core` → **`linksawakening.pkg`** (20 MB) | **done** |
+| P4 | PS4 install + hardware test                | Install `.pkg` on the jailbroken PS4, confirm boot + rendering                 | next       |
+| 3D | 3DS port                                   | devkitARM + libctru; SDL2-3DS or native backend; Citra for testing             | pending    |
+| 6  | Settings PAL extension                     | `gb_platform_fs_read/write` so settings persist on non-stdio targets           | pending    |
+| 8  | Additional backends                        | WASM (Emscripten), Android (NDK + SDL2), NXDK, PSL1GHT, KOS                     | pending    |
 
 Phase 2 in the original plan was "extract a PAL." That work was already done
-by upstream — `platform_sdl.h` is the PAL. The current Phase 2 is just an audit
-to make sure no runtime code escapes the contract by calling SDL2 directly.
+by upstream — `platform_sdl.h` is the PAL. Phase 2 was an audit confirming no
+runtime code escapes the contract.
+
+The phase plan pivoted mid-project: the Xbox 360 target was parked after the
+full-game XEX hit a Xenia memory error, and **PS4 + 3DS** became the focus
+(see the P-rows above).
 
 ---
 
