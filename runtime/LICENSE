@@ -1,0 +1,44 @@
+This directory (runtime/) is vendored from the gb-recompiled project:
+
+  - Upstream:  https://github.com/arcanite24/gb-recompiled  (original)
+  - Fork:      https://github.com/sp00nznet/gb-recompiled   (vendored from)
+
+gb-recompiled is distributed under the MIT License, as declared in its
+README ("This project is licensed under the MIT License."). It is
+reproduced here to satisfy the MIT attribution requirement for this
+vendored copy.
+
+Third-party libraries under runtime/third_party/ keep their own licenses:
+  - third_party/imgui — Dear ImGui (https://github.com/ocornut/imgui), MIT,
+    see third_party/imgui/LICENSE.txt
+  - third_party/enet  — ENet (https://github.com/lsalzman/enet), MIT,
+    see third_party/enet/LICENSE
+
+The platform backends added by linksawakening-portable
+(platform_libxenon.c, platform_3ds.c, platform_psl1ght.c, the
+*_stubs.c files) are MIT-licensed — see the repository-root LICENSE.
+
+----------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) gb-recompiled contributors (arcanite24 and others)
+Copyright (c) 2026 sp00nznet (fork modifications and platform backends)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
