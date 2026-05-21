@@ -42,16 +42,28 @@ cc1 "$LA/rom_main.c" "rom_main.o"
 cc1 "$LA/rom_rom.c"  "rom_rom.o"
 
 echo '[3/4] Recompiled game — rom.c (~115 MB, slow)'
-cc1 "$LA/rom.c" "rom.o"
+# -fno-inline: rom.c is one giant translation unit; at -O2 the compiler
+# inlines thousands of small recompiled functions together, producing a
+# single function over WebAssembly's 7.65 MB per-function limit. Disabling
+# inlining keeps every recompiled function a separate (bounded) wasm function.
+echo '  cc  rom.c  (-fno-inline)'
+emcc $CFLAGS -fno-inline -c "$LA/rom.c" -o "rom.o"
+OBJS+=("rom.o")
 
 echo '[4/4] Link -> la360.html'
+# Link at -O0: at -O1+ emscripten runs wasm-opt, whose whole-program
+# inliner merges the ~9000 small recompiled functions back together until
+# one exceeds WebAssembly's 7.65 MB per-function cap. -O0 skips wasm-opt,
+# so every recompiled function stays a separate, bounded wasm function.
+# The per-function code is still clang -O2 optimized (from the .o files).
 # ALLOW_MEMORY_GROWTH: the recompiled game + ROM array needs a lot of
 # linear memory; let it grow rather than guessing a fixed size.
-em++ -O2 -sUSE_SDL=2 \
+em++ -O0 -sUSE_SDL=2 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sINITIAL_MEMORY=134217728 \
     -sEXIT_RUNTIME=0 \
     -sSTACK_SIZE=1048576 \
+    --shell-file "$LA/cmake/test/wasm_shell.html" \
     "${OBJS[@]}" \
     -o la360.html
 

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link's Awakening — WebAssembly</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0e12; }
+  body { display: flex; flex-direction: column;
+         align-items: center; justify-content: center; }
+  /* !important — SDL2's emscripten backend writes an inline style on the
+     canvas; override it so the display size stays a fixed 4x GB screen. */
+  #canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 640px !important; height: 576px !important;
+    background: #000; outline: none;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+  }
+  #status { color: #9a9aa6; font: 14px/1.4 system-ui, sans-serif;
+            margin-top: 14px; letter-spacing: 0.02em; }
+</style>
+</head>
+<body>
+<canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+<div id="status">Loading…</div>
+<script>
+  var statusEl = document.getElementById('status');
+  var Module = {
+    canvas: document.getElementById('canvas'),
+    setStatus: function (t) {
+      if (!statusEl) return;
+      statusEl.textContent = t;
+      statusEl.style.display = t ? '' : 'none';
+    },
+    print:    function (t) { console.log(t); },
+    printErr: function (t) { console.error(t); }
+  };
+  Module.setStatus('Loading…');
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>

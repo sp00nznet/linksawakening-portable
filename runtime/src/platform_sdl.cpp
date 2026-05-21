@@ -473,6 +473,18 @@ bool gb_platform_init(int scale) {
         dm.w, dm.h,
         SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN
     );
+#elif defined(__EMSCRIPTEN__)
+    /* WebAssembly: a fixed-size window — no RESIZABLE, so SDL doesn't keep
+     * resizing the <canvas> to track the browser window. The HTML shell's
+     * CSS controls the on-page display size. */
+    g_window = SDL_CreateWindow(
+        "Link's Awakening Recompiled",
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        GB_SCREEN_WIDTH * g_scale,
+        GB_SCREEN_HEIGHT * g_scale,
+        SDL_WINDOW_SHOWN
+    );
 #else
     g_window = SDL_CreateWindow(
         "Link's Awakening Recompiled",
@@ -531,8 +543,9 @@ bool gb_platform_init(int scale) {
     // Initialize asset viewer (needs renderer for texture creation)
     asset_viewer_init(g_renderer);
 
-#ifndef __ANDROID__
-    /* Apply saved window scale (desktop only — Android stays fullscreen) */
+#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
+    /* Apply saved window scale (desktop only — Android is fullscreen, and
+     * the wasm canvas size is fixed at creation + styled by the HTML shell) */
     SDL_SetWindowSize(g_window, GB_SCREEN_WIDTH * g_scale, GB_SCREEN_HEIGHT * g_scale);
     SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 #endif

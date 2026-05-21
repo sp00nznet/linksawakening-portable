@@ -3,8 +3,8 @@
 Multi-platform port of the static recompilation of *The Legend of Zelda:
 Link's Awakening DX* (Game Boy Color). The game is recompiled to native C;
 each platform gets a backend implementing one shared interface. **Running
-on PlayStation 4, PlayStation 3, Nintendo 3DS, Nintendo Wii, and Android**
-(plus the Windows reference build).
+on PlayStation 4, PlayStation 3, Nintendo 3DS, Nintendo Wii, Android, and in
+the browser via WebAssembly** (plus the Windows reference build).
 
 **→ Build instructions for every platform: [docs/BUILDING.md](docs/BUILDING.md)**
 
@@ -39,8 +39,8 @@ Built on:
 > | **Nintendo 3DS** | `platform_3ds.c` (native libctru) | ✅ **Running in Azahar *and* on a real New 2DS XL** — reaches gameplay. `linksawakening.3dsx` (22 MB). |
 > | **Nintendo Wii** | `platform_wii.c` (native libogc) | ✅ **Running in Dolphin** — title screen + intro. `linksawakening.dol` (24 MB). |
 > | **Android** | `platform_sdl.cpp` (SDL2 + NDK) | ✅ **Running in the Android emulator** — title screen, fullscreen landscape with on-screen touch controls. `linksawakening.apk` (11 MB, x86_64). |
+> | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ✅ **Runs in the browser** — loads, renders, plays audio. Unblocked by the recompiler's dispatch-split + oversized-function demotion + a no-inline link. Canvas-centering polish pending. |
 > | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⏸ Parked — full-game XEX hits a memory error in Xenia. |
-> | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ⏸ Blocked — recompiler emits functions over wasm's 7.65 MB per-function cap. |
 >
 > Big-endian targets (PS3, Wii, and the parked 360) are carried by the
 > AF/BC/DE/HL register-pair fix in `gbrt.h`. See
@@ -89,18 +89,21 @@ toolchain file (added in Phase 4).
   register-pair fix — so the runtime builds for any target.
 
 **Platforms** — see the [status table](#linksawakening-portable) above:
-PS4, PS3, 3DS, Wii, and Android are playable; Xbox 360 is parked;
-WebAssembly is blocked.
+PS4, PS3, 3DS, Wii, Android, and WebAssembly are playable; Xbox 360 and
+Nintendo Switch are parked.
 
 **Open work:**
 
-- **WebAssembly** — the recompiler emits functions larger than WebAssembly's
-  ~7.65 MB per-function limit. Needs the recompiler to split oversized
-  functions (`gb_dispatch` and a few giant recompiled routines) before a
-  wasm build can link.
+- **WebAssembly polish** — the wasm build runs, but the emscripten `<canvas>`
+  isn't centred/sized on the page (gameplay is unaffected). The build also
+  links at `-O0` to dodge `wasm-opt`'s function-merging; a tuned
+  `wasm-opt` pass that limits inlining would let it link optimized.
 - **Xbox 360** — `platform_libxenon.c` is written and a hello-world XEX runs
   in Xenia, but the full-game XEX hits a Xenia memory error. Likely needs
   real RGH/JTAG hardware to validate.
+- **Nintendo Switch** — feasible via the SDL2 backend (like Android), but
+  parked alongside the 360: needs a modded console or a working homebrew
+  emulator to develop and test against.
 - **Settings persistence** — a `gb_platform_fs_read/write` PAL extension so
   rebindable controls survive on targets without plain stdio.
 - **More targets** — PSP, GameCube, and others are feasible with the same
