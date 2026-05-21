@@ -13,6 +13,7 @@ and how to run each one.
 - [Nintendo 3DS](#nintendo-3ds)
 - [Nintendo Wii](#nintendo-wii)
 - [Android](#android)
+- [WebAssembly](#webassembly)
 - [Parked / blocked targets](#parked--blocked-targets)
 
 ---
@@ -304,6 +305,51 @@ the NDK CMake build compiles `rom.c` + the runtime + `platform_sdl.cpp` into
 
 ---
 
+## WebAssembly
+
+wasm32 little-endian. Reuses the SDL2 backend (`platform_sdl.cpp`) through
+Emscripten's bundled SDL2 port. The browser drives the loop — `rom_main.c`
+uses `emscripten_set_main_loop` under `__EMSCRIPTEN__`.
+
+WebAssembly caps a single function body at ~7.65 MB. The recompiler emits
+`gb_dispatch` split into chunk functions and demotes oversized routines to
+the interpreter; `build_wasm.sh` additionally compiles `rom.c` with
+`-fno-inline` and links at `-O0`, so neither the C compiler nor `wasm-opt`
+merges the ~9000 small recompiled functions back into one oversized one.
+
+### One-time toolchain setup (in WSL Debian)
+
+```bash
+cd ~
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk && ./emsdk install latest && ./emsdk activate latest
+```
+
+### Build
+
+```powershell
+wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_wasm.sh
+```
+
+Compiles `rom.c` + runtime + `platform_sdl.cpp` with `emcc` and links with
+the minimal custom shell `cmake/test/wasm_shell.html`.
+
+**Output:** `build-wasm/la360.{html,js,wasm}`.
+
+### Run
+
+WebAssembly must be served over HTTP (not `file://`):
+
+```powershell
+wsl -d Debian -- python3 -m http.server 8000 --directory /mnt/d/ports/la360/build-wasm
+```
+
+Then open `http://localhost:8000/la360.html`. Confirm no function exceeds
+the wasm limit with
+`python3 cmake/test/wasm_funcsizes.py build-wasm/la360.wasm`.
+
+---
+
 ## Parked / blocked targets
 
 ### Xbox 360 — parked
@@ -315,11 +361,8 @@ Xenia, but the full-game XEX hits a memory error in Xenia (the 115 MB
 scripts are in place if you want to pick it up — likely needs real
 RGH/JTAG hardware to validate.
 
-### WebAssembly — blocked
+### Nintendo Switch — parked
 
-Emscripten builds the whole game, but WebAssembly caps individual
-functions at ~7.65 MB and the recompiler emits several functions larger
-than that (`gb_dispatch` and a few giant recompiled routines — one is
-10.8 MB). The fix is upstream in gb-recompiled: the recompiler must emit
-size-bounded functions. `cmake/test/build_wasm.sh` is ready for when that
-lands.
+Not started. Feasible via the SDL2 backend (the same path as Android),
+but parked alongside the 360 — developing it needs a modded console or a
+working homebrew emulator to test against.
