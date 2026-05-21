@@ -40,7 +40,7 @@ Built on:
 > | **Nintendo Wii** | `platform_wii.c` (native libogc) | ✅ **Running in Dolphin** — title screen + intro. `linksawakening.dol` (24 MB). |
 > | **Android** | `platform_sdl.cpp` (SDL2 + NDK) | ✅ **Running in the Android emulator** — title screen, fullscreen landscape with on-screen touch controls. `linksawakening.apk` (11 MB, x86_64). |
 > | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ✅ **Runs in the browser** — loads, renders, plays audio. Unblocked by the recompiler's dispatch-split + oversized-function demotion + a no-inline link. Canvas-centering polish pending. |
-> | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⏸ Parked — full-game XEX hits a memory error in Xenia. |
+> | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⚠ **Builds — full-game XEX (28 MB).** Xenia can't run it (Canary host-crashes, master guest-crashes on libxenon homebrew); needs real RGH/JTAG hardware to validate. |
 >
 > Big-endian targets (PS3, Wii, and the parked 360) are carried by the
 > AF/BC/DE/HL register-pair fix in `gbrt.h`. See
@@ -98,9 +98,12 @@ Nintendo Switch are parked.
   isn't centred/sized on the page (gameplay is unaffected). The build also
   links at `-O0` to dodge `wasm-opt`'s function-merging; a tuned
   `wasm-opt` pass that limits inlining would let it link optimized.
-- **Xbox 360** — `platform_libxenon.c` is written and a hello-world XEX runs
-  in Xenia, but the full-game XEX hits a Xenia memory error. Likely needs
-  real RGH/JTAG hardware to validate.
+- **Xbox 360** — the full-game XEX builds (`build_libxenon.sh` → a 28 MB
+  `linksawakening.xex`, big-endian, carried by the `gbrt.h` register-pair
+  fix). It can't be validated in an emulator: Xenia Canary host-crashes
+  and Xenia master guest-crashes on libxenon homebrew that drives the
+  video/audio hardware directly. The port is code-complete — it needs a
+  real RGH/JTAG console to verify.
 - **Nintendo Switch** — feasible via the SDL2 backend (like Android), but
   parked alongside the 360: needs a modded console or a working homebrew
   emulator to develop and test against.

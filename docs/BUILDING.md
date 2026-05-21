@@ -14,6 +14,7 @@ and how to run each one.
 - [Nintendo Wii](#nintendo-wii)
 - [Android](#android)
 - [WebAssembly](#webassembly)
+- [Xbox 360](#xbox-360)
 - [Parked / blocked targets](#parked--blocked-targets)
 
 ---
@@ -350,16 +351,49 @@ the wasm limit with
 
 ---
 
+## Xbox 360
+
+PowerPC big-endian. Native libxenon backend (`platform_libxenon.c`); the
+`gbrt.h` register-pair fix (shared with PS3/Wii) carries big-endianness.
+
+The full-game XEX builds and is hardware-ready, but **cannot be validated
+in an emulator** — Xenia crashes on libxenon homebrew that drives the
+video/audio hardware directly (Canary host-crashes; master runs further
+then reports "guest has crashed"). A real RGH/JTAG console is needed.
+
+### One-time toolchain setup (in WSL Debian)
+
+libxenon's `xenon-gcc` toolchain, installed to `/usr/local/xenon`:
+
+```bash
+git clone https://github.com/Free60Project/libxenon ~/libxenon
+cd ~/libxenon/toolchain
+./build-xenon-toolchain toolchain
+./build-xenon-toolchain libs
+```
+
+`elf2xex` (the ELF→XEX wrapper) is expected at `C:\xbox360nfs\tools\elf2xex`.
+
+### Build
+
+```powershell
+wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_libxenon.sh
+```
+
+Compiles `rom.c` + runtime + `platform_libxenon.c` with `xenon-gcc`, links
+against libxenon, then runs `xenon-objcopy` + `elf2xex`.
+
+**Output:** `build-xenon/linksawakening.xex` (~28 MB).
+
+### Run
+
+- **Hardware:** copy the XEX to a USB drive or the HDD of an RGH/JTAG
+  Xbox 360 and launch it from a homebrew dashboard (XeXMenu, Aurora).
+- **Emulator:** Xenia does not currently run it (see above).
+
+---
+
 ## Parked / blocked targets
-
-### Xbox 360 — parked
-
-`platform_libxenon.c` is written and a hello-world XEX builds and runs in
-Xenia, but the full-game XEX hits a memory error in Xenia (the 115 MB
-`rom.c` versus Xenia's homebrew memory model). The libxenon toolchain
-(`/usr/local/xenon`, `xenon-gcc`) and `cmake/test/build_ps4.sh`-style
-scripts are in place if you want to pick it up — likely needs real
-RGH/JTAG hardware to validate.
 
 ### Nintendo Switch — parked
 
