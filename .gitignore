@@ -38,6 +38,11 @@ bindings.cfg
 *.elf32
 *.elf.gz
 
+# Original Xbox (NXDK) build output
+xbox/bin/
+xbox/obj/
+*.xbe
+
 # Emscripten / WASM
 *.wasm
 *.wasm.map
