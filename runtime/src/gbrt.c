@@ -908,9 +908,13 @@ void gbrt_log_trace(GBContext* ctx, uint16_t bank, uint16_t addr) {
     }
 }
 
-/* Default dispatch implementations.
- * On GCC/Clang these are weak symbols that can be overridden.
- * On MSVC they are regular functions (pokemon uses its own dispatch_call). */
+/* Default dispatch implementations — weak fallbacks used only when the
+ * runtime is linked WITHOUT a recompiled rom.c (interpreter-only). Every
+ * real build links rom.c, which provides the strong gb_dispatch; ELF
+ * linkers simply override the weak symbol, but COFF/PE linkers (NXDK's
+ * lld) reject the duplicate — so those builds compile this out with
+ * -DGB_RECOMPILED_DISPATCH. */
+#ifndef GB_RECOMPILED_DISPATCH
 #if !defined(_MSC_VER)
 __attribute__((weak))
 #endif
@@ -927,6 +931,7 @@ void gb_dispatch_call(GBContext* ctx, uint16_t addr) {
     gbrt_log_trace(ctx, (addr < 0x4000) ? 0 : ctx->rom_bank, addr);
     ctx->pc = addr;
 }
+#endif /* GB_RECOMPILED_DISPATCH */
 
 /* ============================================================================
  * Timing & Hardware Sync

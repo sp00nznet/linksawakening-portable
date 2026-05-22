@@ -29,6 +29,8 @@ bindings.cfg
 *.obj
 *.a
 *.lib
+*.d
+*.iso
 
 # Xbox 360 / libxenon
 *.xex

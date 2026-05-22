@@ -15,6 +15,7 @@ and how to run each one.
 - [Android](#android)
 - [WebAssembly](#webassembly)
 - [Xbox 360](#xbox-360)
+- [Original Xbox](#original-xbox)
 - [Parked / blocked targets](#parked--blocked-targets)
 
 ---
@@ -390,6 +391,50 @@ against libxenon, then runs `xenon-objcopy` + `elf2xex`.
 - **Hardware:** copy the XEX to a USB drive or the HDD of an RGH/JTAG
   Xbox 360 and launch it from a homebrew dashboard (XeXMenu, Aurora).
 - **Emulator:** Xenia does not currently run it (see above).
+
+---
+
+## Original Xbox
+
+x86 little-endian — the recompiled `rom.c` compiles unchanged. Reuses the
+SDL2 backend (`platform_sdl.cpp`) through NXDK's bundled SDL2 port — the
+same approach as PS4 / Android / WebAssembly.
+
+The `.xbe` builds, but **does not yet boot in xemu**: the Xbox logo shows
+and the game appears to hang in init before rendering its first frame.
+Under debugging.
+
+### Toolchain — the NXDK Docker image
+
+A from-scratch NXDK clone needs many git submodules and the fetches are
+flaky; use the official prebuilt image instead (it ships a fully-built
+NXDK — libnxdk, libSDL2, libpbkit, ...):
+
+```powershell
+docker pull ghcr.io/xboxdev/nxdk
+```
+
+### Build
+
+```powershell
+docker run --rm -v D:/ports/la360:/src ghcr.io/xboxdev/nxdk `
+    sh /src/cmake/test/build_xbox.sh
+```
+
+Compiles `rom.c` + runtime + `platform_sdl.cpp` with NXDK's clang
+(`-target i386-pc-win32`, `-Os` to keep the `.xbe` small for the Xbox's
+64 MB), links libnxdk + libSDL2, and wraps the result into a `.xbe` and
+an XISO. `xbox/Makefile` is a standard NXDK project Makefile.
+
+**Output:** `build-xbox/linksawakening.xbe` and `linksawakening.iso`.
+
+### Run
+
+- **Emulator:** [xemu](https://xemu.app/) —
+  `xemu.exe -dvd_path build-xbox\linksawakening.iso`. xemu needs an Xbox
+  MCPX boot ROM, a BIOS, an EEPROM and an HDD image — supply your own.
+- **Hardware:** copy `default.xbe` to a softmodded Xbox and launch it
+  from a homebrew dashboard.
 
 ---
 

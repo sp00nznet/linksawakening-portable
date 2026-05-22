@@ -41,6 +41,7 @@ Built on:
 > | **Android** | `platform_sdl.cpp` (SDL2 + NDK) | ✅ **Running in the Android emulator** — title screen, fullscreen landscape with on-screen touch controls. `linksawakening.apk` (11 MB, x86_64). |
 > | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ✅ **Runs in the browser** — loads, renders, plays audio. Unblocked by the recompiler's dispatch-split + oversized-function demotion + a no-inline link. Canvas-centering polish pending. |
 > | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⚠ **Builds — full-game XEX (28 MB).** Xenia can't run it (Canary host-crashes, master guest-crashes on libxenon homebrew); needs real RGH/JTAG hardware to validate. |
+> | **Original Xbox** | `platform_sdl.cpp` (NXDK + SDL2) | ⚠ **Builds — `linksawakening.xbe` (13 MB).** Doesn't boot in xemu yet — hangs at the Xbox logo before the game renders; needs debugging. |
 >
 > Big-endian targets (PS3, Wii, and the parked 360) are carried by the
 > AF/BC/DE/HL register-pair fix in `gbrt.h`. See
@@ -104,6 +105,11 @@ Nintendo Switch are parked.
   and Xenia master guest-crashes on libxenon homebrew that drives the
   video/audio hardware directly. The port is code-complete — it needs a
   real RGH/JTAG console to verify.
+- **Original Xbox** — builds via NXDK (`build_xbox.sh` → a 13 MB
+  `linksawakening.xbe`, reusing `platform_sdl.cpp` over NXDK's SDL2). It
+  doesn't boot in xemu yet — the Xbox logo shows but the game appears to
+  hang in init before rendering its first frame. Needs debugging (likely
+  in `gb_platform_init` against NXDK's SDL2).
 - **Nintendo Switch** — feasible via the SDL2 backend (like Android), but
   parked alongside the 360: needs a modded console or a working homebrew
   emulator to develop and test against.
