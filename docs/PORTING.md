@@ -80,11 +80,36 @@ Default to option 1 when the audit finds violations.
 | Backend         | File                      | Status     | Notes |
 | --------------- | ------------------------- | ---------- | ----- |
 | SDL2 (current)  | `platform_sdl.cpp`        | ✓ upstream | Windows, macOS, Linux, also valid on WASM via Emscripten's SDL2 port |
-| libxenon (360)  | `platform_libxenon.cpp`   | Phase 5    | Xenos GPU framebuffer, USB gamepad, audio out, FATFS for saves |
-| NXDK (OG Xbox)  | `platform_nxdk.cpp`       | later      | x86 native, D3D8 directly |
-| PSL1GHT (PS3)   | `platform_psl1ght.cpp`    | later      | PPC big-endian, inherits all 360 endian fixes |
-| KOS (Dreamcast) | `platform_kos.cpp`        | later      | SH-4, 16 MB RAM — squeeze; PVR framebuffer; AICA audio |
-| Emscripten/WASM | `platform_wasm.cpp` *or* reuse `platform_sdl.cpp` | later | Emscripten has SDL2 — may not need a new backend at all |
+| libxenon (360)  | `platform_libxenon.c`     | builds     | Xenos GPU framebuffer, USB gamepad, audio out, FATFS for saves |
+| NXDK (OG Xbox)  | `platform_nxdk` (xbox/)   | builds     | x86 native, D3D8 directly |
+| PSL1GHT (PS3)   | `platform_psl1ght.c`      | playable   | PPC big-endian, inherits all 360 endian fixes |
+| libctru (3DS)   | `platform_3ds.c`          | playable   | ARM LE, ndsp audio, sdmc saves |
+| libogc (Wii)    | `platform_wii.c`          | playable   | PPC BE, YUY2 XFB, ASND audio, libfat saves |
+| libogc (GameCube)| `platform_gamecube.c`    | scaffold   | Wii backend minus WPAD; PAD input; SD-Gecko/libfat saves → `.dol` |
+| PSPSDK (PSP)    | `platform_psp.c`          | scaffold   | MIPS LE, raw VRAM blit 1:1, sceAudio thread → `EBOOT.PBP` |
+| VitaSDK (Vita)  | `platform_vita.c`         | scaffold   | ARM LE, vita2d 3x blit, sceAudioOut thread → `.vpk`. Roomiest target (512 MB) |
+| PS2SDK (PS2)    | `platform_ps2.c`          | scaffold   | EE MIPS LE, gsKit sprite, audsrv, libpad. IOP module loading is the risk spot |
+| KOS (Dreamcast) | `platform_dreamcast.c`    | scaffold   | SH-4 LE, 16 MB RAM — *squeeze*; RGB565 framebuffer; snd_stream; VMU saves |
+| Emscripten/WASM | reuse `platform_sdl.cpp`  | playable   | Emscripten's SDL2 port — no separate backend |
+
+"scaffold" = backend file + `build_<x>.sh` written to the established contract,
+not yet compiled (toolchains live under WSL; the Vita/PSP/PS2/DC SDKs may need
+installing first). Build scripts live in `cmake/test/build_<x>.sh` and run under
+WSL against `/mnt/d/ports/la360`. Per-target gotchas to verify on first build:
+
+- **GameCube** — saves need an SD adapter (SD Gecko / SD2SP2); highest-confidence
+  port since it shares libogc with the working Wii backend.
+- **PSP** — video is a 1:1 centered raw-framebuffer blit (2x won't fit 272 px
+  tall). If the screen is blank, check the VRAM cached/uncached aliasing in
+  `gb_platform_init`. `PSP_HEAP_SIZE_KB(-1024)` leaves 1 MB for stacks.
+- **Vita** — texture is `A8B8G8R8` so the blit swaps R/B; if colors look wrong,
+  that's the first place to look.
+- **PS2** — riskiest. The USB-storage IRX set has churned (classic
+  `usbd`+`usbhdfsd` vs the newer `bdm` stack); `load_iop()` + the embedded-IRX
+  list in `build_ps2.sh` must match your PS2SDK. For PCSX2, set `SAVE_DIR` to
+  `host:` to skip USB.
+- **Dreamcast** — full save states can exceed a VMU's ~100 KB; battery RAM fits.
+  Switch `-O2`→`-Os` in `build_dreamcast.sh` if RAM is tight at runtime.
 
 ## Endianness audit checklist (Phase 3)
 
