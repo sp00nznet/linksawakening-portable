@@ -3,8 +3,8 @@
 Multi-platform port of the static recompilation of *The Legend of Zelda:
 Link's Awakening DX* (Game Boy Color). The game is recompiled to native C;
 each platform gets a backend implementing one shared interface. **Running
-on PlayStation 4, PlayStation 3, Nintendo 3DS, Nintendo Wii, Android, and in
-the browser via WebAssembly** (plus the Windows reference build).
+on PlayStation 4, PlayStation 3, Nintendo 3DS, Nintendo Wii, Sega Dreamcast,
+Android, and in the browser via WebAssembly** (plus the Windows reference build).
 
 **→ Build instructions for every platform: [docs/BUILDING.md](docs/BUILDING.md)**
 
@@ -17,6 +17,10 @@ the browser via WebAssembly** (plus the Windows reference build).
 | PS3 — title (RPCS3) | Wii — title (Dolphin) | Android — title (emulator) |
 |---------------------|-----------------------|----------------------------|
 | ![PS3 title](screenshots/ps3-title.png) | ![Wii title](screenshots/wii-title.png) | ![Android title](screenshots/android-title.png) |
+
+| Sega Dreamcast — title (Flycast, stock 16 MB) |
+|-----------------------------------------------|
+| ![Dreamcast title](screenshots/dreamcast_title.png) |
 
 Built on:
 
@@ -38,6 +42,7 @@ Built on:
 > | **PlayStation 3** | `platform_psl1ght.c` (native PSL1GHT) | ✅ **Running in RPCS3 at ~56 FPS** — title + gameplay. `EBOOT.BIN` (25 MB). |
 > | **Nintendo 3DS** | `platform_3ds.c` (native libctru) | ✅ **Running in Azahar *and* on a real New 2DS XL** — reaches gameplay. `linksawakening.3dsx` (22 MB). |
 > | **Nintendo Wii** | `platform_wii.c` (native libogc) | ✅ **Running in Dolphin** — title screen + intro. `linksawakening.dol` (24 MB). |
+> | **Sega Dreamcast** | `platform_dreamcast.c` (native KallistiOS) | ⚠ **Boots + renders in Flycast on a stock 16 MB Dreamcast** — title screen. Build `-Os` + stripped ELF (`linksawakening.elf`, 14 MB). Not yet full-speed — see Open work. |
 > | **Android** | `platform_sdl.cpp` (SDL2 + NDK) | ✅ **Running in the Android emulator** — title screen, fullscreen landscape with on-screen touch controls. `linksawakening.apk` (11 MB, x86_64). |
 > | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ✅ **Runs in the browser** — loads, renders, plays audio. Unblocked by the recompiler's dispatch-split + oversized-function demotion + a no-inline link. Canvas-centering polish pending. |
 > | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⚠ **Builds — full-game XEX (28 MB).** Xenia can't run it (Canary host-crashes, master guest-crashes on libxenon homebrew); needs real RGH/JTAG hardware to validate. |
@@ -90,8 +95,8 @@ toolchain file (added in Phase 4).
   register-pair fix — so the runtime builds for any target.
 
 **Platforms** — see the [status table](#linksawakening-portable) above:
-PS4, PS3, 3DS, Wii, Android, and WebAssembly are playable; Xbox 360 and
-Nintendo Switch are parked.
+PS4, PS3, 3DS, Wii, Android, and WebAssembly are playable; the Sega Dreamcast
+boots and renders (full-speed WIP); Xbox 360 and Nintendo Switch are parked.
 
 **Open work:**
 
@@ -110,13 +115,25 @@ Nintendo Switch are parked.
   doesn't boot in xemu yet — the Xbox logo shows but the game appears to
   hang in init before rendering its first frame. Needs debugging (likely
   in `gb_platform_init` against NXDK's SDL2).
+- **Sega Dreamcast** — boots and renders the title screen in Flycast on a
+  stock 16 MB Dreamcast (`cmake/test/build_dreamcast.sh`, native KallistiOS:
+  RGB565 framebuffer, snd_stream audio, maple input, VMU saves; built via the
+  `kazade/dreamcast-sdk` Docker image). Two build requirements: `OPT=-Os` (the
+  `-O2` image is ~15.9 MB and won't fit 16 MB; `-Os` → ~13.9 MB — the same
+  `-O2`-bloat lesson as WASM/Xbox) and a **stripped ELF** (the 50 MB unstripped
+  debug ELF loads then exits instantly in flycast; the build auto-strips to the
+  bootable ~14 MB `linksawakening.elf`). **Known issue, tabled:** not yet
+  full-speed — gameplay is choppy. Confirmed CPU/frame-pacing bound, *not*
+  audio: a silent `-DLA_DC_NO_AUDIO` build runs no faster.
 - **Nintendo Switch** — feasible via the SDL2 backend (like Android), but
   parked alongside the 360: needs a modded console or a working homebrew
   emulator to develop and test against.
 - **Settings persistence** — a `gb_platform_fs_read/write` PAL extension so
   rebindable controls survive on targets without plain stdio.
-- **More targets** — PSP, GameCube, and others are feasible with the same
-  one-backend-per-platform pattern; none started.
+- **More targets** — **GameCube** (libogc), **PSP** (PSPSDK), **PS Vita**
+  (vita2d), and **PS2** (gsKit/PS2SDK) backends are scaffolded
+  (`runtime/src/platform_<x>.c` + `cmake/test/build_<x>.sh`, same PAL pattern)
+  but not yet built or verified — no toolchains set up for them locally yet.
 
 ---
 
