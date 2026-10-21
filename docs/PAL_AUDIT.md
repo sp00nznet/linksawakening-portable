@@ -1,5 +1,7 @@
 # Phase 2 — PAL contract audit
 
+> Paths like `runtime/...` below are inside gb-recompiled, at `LinksAwakening/gbrecomp/runtime/` in this repo.
+
 Read of every `.c` and `.cpp` in `runtime/src/` (excluding `platform_sdl.cpp`
 itself) for direct calls to SDL2, ImGui, stdio, Win32, or threading APIs.
 Goal: catalogue every place the runtime escapes the platform abstraction so we

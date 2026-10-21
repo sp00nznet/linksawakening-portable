@@ -1,7 +1,7 @@
 # Building
 
 Step-by-step build instructions for every platform. Each port is driven
-by a script in `cmake/test/`; this document explains the prerequisites
+by a script in `scripts/`; this document explains the prerequisites
 and how to run each one.
 
 ## Contents
@@ -16,32 +16,50 @@ and how to run each one.
 - [WebAssembly](#webassembly)
 - [Xbox 360](#xbox-360)
 - [Original Xbox](#original-xbox)
+- [Nintendo GameCube](#nintendo-gamecube)
+- [Sega Dreamcast](#sega-dreamcast)
+- [PlayStation 2](#playstation-2)
+- [PSP](#psp)
+- [PS Vita](#ps-vita)
 - [Parked / blocked targets](#parked--blocked-targets)
 
 ---
 
 ## Prerequisites common to all targets
 
+### The source
+
+Clone with submodules. `LinksAwakening/` is the game repo
+([sp00nznet/LinksAwakening](https://github.com/sp00nznet/LinksAwakening)), and
+inside it `gbrecomp/` is the runtime and recompiler
+([sp00nznet/gb-recompiled](https://github.com/sp00nznet/gb-recompiled)). Every
+port builds `LinksAwakening/rom_main.c` against `LinksAwakening/gbrecomp/runtime/`.
+
+```
+git clone --recurse-submodules https://github.com/sp00nznet/linksawakening-portable.git
+cd linksawakening-portable
+```
+
 ### The recompiled game files
 
-Three files are **not in the repo** — they are recompiler output derived
-from the ROM, and are `.gitignore`d:
+Generated from your own ROM into `LinksAwakening/gen/`, which is gitignored and
+never committed:
 
 | File | What it is |
 | --- | --- |
-| `rom.c` | ~115 MB — the entire game recompiled to C (17,819 functions) |
-| `rom.h` | generated function declarations |
-| `rom_rom.c` | ~6 MB — the ROM image as a C byte array |
+| `rom.c` | ~109 MB: the entire game recompiled to C |
+| `rom_rom.c` | ~6.6 MB: the ROM image as a C byte array |
+| `rom.h` | the two entry points |
 
-Generate them by running [gb-recompiled](https://github.com/sp00nznet/gb-recompiled)
-against a **legally obtained Link's Awakening DX ROM**, then drop all three
-at the repository root. Every build below expects them there.
+The simplest way is to double-click `LinksAwakening\Setup.cmd`: it asks for
+your ROM, generates `gen/` and also builds the Windows version. To do it by
+hand, follow steps 1-7 of *Step by step* in
+[LinksAwakening's README](https://github.com/sp00nznet/LinksAwakening#step-by-step),
+run inside `LinksAwakening/`. Every build below fails early with a message if
+`gen/rom.c` is missing.
 
-### The runtime
-
-`runtime/` is vendored from [sp00nznet/gb-recompiled](https://github.com/sp00nznet/gb-recompiled).
-It is already in the repo — no action needed unless you want to re-sync it
-to a newer gb-recompiled commit.
+Tested ROM: Link's Awakening DX (USA, Europe) (Rev 2), SHA-1
+`1c091225688d966928cc74336dbef2e07d12a47c`.
 
 ### WSL
 
@@ -54,24 +72,10 @@ instead and does not need WSL.
 
 ## Windows (reference build)
 
-The reference build — native Windows, SDL2, full ImGui menu + multiplayer.
-
-**Prerequisites** — [MSYS2](https://www.msys2.org/), then from a MinGW64 shell:
-
-```bash
-pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake \
-          mingw-w64-x86_64-ninja mingw-w64-x86_64-SDL2
-```
-
-**Build:**
-
-```bash
-export PATH="/c/msys64/mingw64/bin:$PATH"
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
-
-**Output:** `build/rom.exe` (~25 MB). Run it directly.
+The Windows build is LinksAwakening itself: run `LinksAwakening\Setup.cmd`, or
+see [its README](https://github.com/sp00nznet/LinksAwakening#getting-started).
+Output: `LinksAwakening/build/linksawakening.exe`. Multiplayer is not part of
+these builds; it lives in [sp00nznet/la-mp](https://github.com/sp00nznet/la-mp).
 
 ---
 
@@ -103,16 +107,16 @@ off. Requires a **jailbroken PS4**.
    Debian 13 only ships OpenSSL 3.x:
 
    ```bash
-   bash cmake/test/fetch_libssl11.sh           # downloads the .deb to ~/
+   bash scripts/fetch_libssl11.sh           # downloads the .deb to ~/
    sudo dpkg -i ~/libssl11.deb
    ```
 
 ### Build
 
 ```powershell
-# from Windows PowerShell — the scripts default their output dir to ~/la360-ps4
-wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_ps4.sh
-wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/package_ps4.sh
+# from Windows PowerShell, in this repo folder. Output goes to ~/la360-ps4 in WSL
+wsl -d Debian -- bash scripts/build_ps4.sh
+wsl -d Debian -- bash scripts/package_ps4.sh
 ```
 
 `build_ps4.sh` compiles `rom.c` + runtime + `platform_sdl.cpp` with clang
@@ -148,11 +152,11 @@ docker pull ps3dev/ps3dev:submodules
 ### Build
 
 ```powershell
-docker run --rm -v D:/ports/la360:/src ps3dev/ps3dev:submodules `
-    bash /src/cmake/test/build_ps3.sh
+docker run --rm -v ${PWD}:/src ps3dev/ps3dev:submodules `
+    bash /src/scripts/build_ps3.sh
 ```
 
-This compiles inside the container (la360 mounted at `/src`):
+This compiles inside the container (this repo mounted at `/src`):
 `powerpc64-ps3-elf-gcc` → link against PSL1GHT → `strip` → `sprxlinker`
 → `fself` → `EBOOT.BIN`.
 
@@ -185,7 +189,7 @@ sudo dkp-pacman -S --noconfirm 3ds-dev
 ### Build
 
 ```powershell
-wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_3ds.sh
+wsl -d Debian -- bash scripts/build_3ds.sh
 ```
 
 Compiles `rom.c` + runtime + `platform_3ds.c` with `arm-none-eabi-gcc`,
@@ -226,7 +230,7 @@ the [Nintendo 3DS](#nintendo-3ds) section first.)
 ### Build
 
 ```powershell
-wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_wii.sh
+wsl -d Debian -- bash scripts/build_wii.sh
 ```
 
 Compiles `rom.c` + runtime + `platform_wii.c` with `powerpc-eabi-gcc`
@@ -277,7 +281,7 @@ This build runs natively on Windows (not WSL).
 ### Build
 
 ```powershell
-powershell -File cmake\test\build_android.ps1 `
+powershell -File scripts\build_android.ps1 `
     -SdlSrc D:\ports\android-build\SDL2-2.32.10 -SdkDir D:\Android\Sdk
 ```
 
@@ -330,11 +334,11 @@ cd emsdk && ./emsdk install latest && ./emsdk activate latest
 ### Build
 
 ```powershell
-wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_wasm.sh
+wsl -d Debian -- bash scripts/build_wasm.sh
 ```
 
 Compiles `rom.c` + runtime + `platform_sdl.cpp` with `emcc` and links with
-the minimal custom shell `cmake/test/wasm_shell.html`.
+the minimal custom shell `scripts/wasm_shell.html`.
 
 **Output:** `build-wasm/la360.{html,js,wasm}`.
 
@@ -343,12 +347,12 @@ the minimal custom shell `cmake/test/wasm_shell.html`.
 WebAssembly must be served over HTTP (not `file://`):
 
 ```powershell
-wsl -d Debian -- python3 -m http.server 8000 --directory /mnt/d/ports/la360/build-wasm
+wsl -d Debian -- python3 -m http.server 8000 --directory build-wasm
 ```
 
 Then open `http://localhost:8000/la360.html`. Confirm no function exceeds
 the wasm limit with
-`python3 cmake/test/wasm_funcsizes.py build-wasm/la360.wasm`.
+`python3 scripts/wasm_funcsizes.py build-wasm/la360.wasm`.
 
 ---
 
@@ -378,7 +382,7 @@ cd ~/libxenon/toolchain
 ### Build
 
 ```powershell
-wsl -d Debian -- bash /mnt/d/ports/la360/cmake/test/build_libxenon.sh
+wsl -d Debian -- bash scripts/build_libxenon.sh
 ```
 
 Compiles `rom.c` + runtime + `platform_libxenon.c` with `xenon-gcc`, links
@@ -417,8 +421,8 @@ docker pull ghcr.io/xboxdev/nxdk
 ### Build
 
 ```powershell
-docker run --rm -v D:/ports/la360:/src ghcr.io/xboxdev/nxdk `
-    sh /src/cmake/test/build_xbox.sh
+docker run --rm -v ${PWD}:/src ghcr.io/xboxdev/nxdk `
+    sh /src/scripts/build_xbox.sh
 ```
 
 Compiles `rom.c` + runtime + `platform_sdl.cpp` with NXDK's clang
@@ -435,6 +439,126 @@ an XISO. `xbox/Makefile` is a standard NXDK project Makefile.
   MCPX boot ROM, a BIOS, an EEPROM and an HDD image — supply your own.
 - **Hardware:** copy `default.xbe` to a softmodded Xbox and launch it
   from a homebrew dashboard.
+
+---
+
+## Nintendo GameCube
+
+PowerPC big-endian, native libogc backend (`platform_gamecube.c`): the Wii
+backend without the Wii Remote. Saves go to `sd:/linksawakening/`. **Builds;
+not run yet.**
+
+### Toolchain (in WSL Debian)
+
+```bash
+sudo dkp-pacman -S --noconfirm gamecube-dev
+```
+
+### Build
+
+```powershell
+wsl -d Debian -- bash scripts/build_gamecube.sh
+```
+
+**Output:** `~/la360-gamecube/la360.dol` in WSL (~22 MB), also copied to
+`build-gamecube/linksawakening.dol` if that folder exists.
+
+### Run
+
+`Dolphin.exe -e la360.dol`, or on hardware through Swiss.
+
+---
+
+## Sega Dreamcast
+
+SH-4 little-endian, native KallistiOS backend (`platform_dreamcast.c`).
+Saves go to the VMU in port A1 as `LADX_SAV` / `LADX_STT`. Builds and shows
+the title screen in Flycast; not full speed (see ROADMAP).
+
+It must be built `-Os`: the `-O2` image is ~15.9 MB and won't run in 16 MB of
+RAM. The script also strips the ELF, because the 50+ MB debug ELF loads and
+exits immediately in Flycast.
+
+### Build (Docker)
+
+```powershell
+docker run --rm -v ${PWD}:/src kazade/dreamcast-sdk `
+    sh -c "OPT=-Os bash /src/scripts/build_dreamcast.sh /src/build-dreamcast"
+```
+
+**Output:** `build-dreamcast/linksawakening.elf` (~14 MB, stripped).
+
+### Run
+
+Load the ELF in Flycast. For hardware, the script prints the scramble and
+CDI steps.
+
+---
+
+## PlayStation 2
+
+MIPS R5900 little-endian, native PS2SDK + gsKit backend (`platform_ps2.c`).
+The audio and USB IOP modules are embedded in the ELF; controller modules
+load from `rom0:`. Saves go to `mass:/linksawakening/` (USB). **Builds; not
+run yet.** The USB module set has changed across PS2SDK versions, so check
+`load_iop()` in `platform_ps2.c` if USB saves fail.
+
+### Build (Docker)
+
+The ps2dev image has no bash, so install it first:
+
+```powershell
+docker run --rm -v ${PWD}:/src ps2dev/ps2dev `
+    sh -c "apk add -q bash && bash /src/scripts/build_ps2.sh /src/build-ps2"
+```
+
+**Output:** `build-ps2/linksawakening.elf` (~22 MB).
+
+### Run
+
+PCSX2 (boot the ELF), or on hardware through wLaunchELF or OPL.
+
+---
+
+## PSP
+
+MIPS Allegrex little-endian, native PSPSDK backend (`platform_psp.c`). Saves
+go to `ms0:/linksawakening/`. **Builds; not run yet.**
+
+The link deliberately has no `--gc-sections`: it strips the import-stub
+sections, and `psp-fixup-imports` then fails with `Error, no nid section found`.
+
+### Build (Docker)
+
+```powershell
+docker run --rm -v ${PWD}:/src pspdev/pspdev bash /src/scripts/build_psp.sh /src/build-psp
+```
+
+**Output:** `build-psp/EBOOT.PBP` (~20 MB).
+
+### Run
+
+PPSSPP: open the `EBOOT.PBP`. On hardware, copy it to
+`ms0:/PSP/GAME/linksawakening/EBOOT.PBP` on a console running custom firmware.
+
+---
+
+## PS Vita
+
+ARMv7 little-endian, native VitaSDK + vita2d backend (`platform_vita.c`).
+Saves go to `ux0:/data/linksawakening/`. **Builds; not run yet.**
+
+### Build (Docker)
+
+```powershell
+docker run --rm -v ${PWD}:/src vitasdk/vitasdk bash /src/scripts/build_vita.sh /src/build-vita
+```
+
+**Output:** `build-vita/linksawakening.vpk` (~9.4 MB).
+
+### Run
+
+Install the VPK with VitaShell on a console running HENkaku/Ensō, or in Vita3K.
 
 ---
 

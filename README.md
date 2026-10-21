@@ -1,12 +1,43 @@
 # linksawakening-portable
 
-Multi-platform port of the static recompilation of *The Legend of Zelda:
-Link's Awakening DX* (Game Boy Color). The game is recompiled to native C;
-each platform gets a backend implementing one shared interface. **Running
-on PlayStation 4, PlayStation 3, Nintendo 3DS, Nintendo Wii, Sega Dreamcast,
-Android, and in the browser via WebAssembly** (plus the Windows reference build).
+*The Legend of Zelda: Link's Awakening DX*, statically recompiled to C and
+built for game consoles, handhelds, Android and the browser. It's the console
+side of [LinksAwakening](https://github.com/sp00nznet/LinksAwakening): the same
+game code and runtime, with one platform backend per target. You supply your
+own ROM; no game code is distributed here.
 
-**→ Build instructions for every platform: [docs/BUILDING.md](docs/BUILDING.md)**
+Part of the sp00nznet recomp projects, built on the
+[gb-recompiled](https://github.com/sp00nznet/gb-recompiled) toolkit and following
+the same house style (generated code is never committed).
+
+## Status
+
+**Pre-release.** Every target below builds from a clean checkout. "Last seen
+running" is the most recent time someone actually ran that build; a target
+that has only been built says so.
+
+| Target | Backend | Builds (2026-10-20) | Last seen running |
+|---|---|---|---|
+| Windows | SDL2 ([LinksAwakening](https://github.com/sp00nznet/LinksAwakening)) | ✅ 23 MB exe | Plays through dungeons; headless run checked 2026-10-20 |
+| PlayStation 4 | SDL2 (OpenOrbis) | ✅ 17 MB `eboot.bin` | Real hardware |
+| PlayStation 3 | `platform_psl1ght.c` | ✅ 23 MB `EBOOT.BIN` | RPCS3, ~56 fps, title + gameplay |
+| Nintendo 3DS | `platform_3ds.c` | ✅ 20 MB `.3dsx` | Azahar and a real New 2DS XL, gameplay |
+| Nintendo Wii | `platform_wii.c` | ✅ 22 MB `.dol` | Dolphin, title + intro |
+| Nintendo GameCube | `platform_gamecube.c` | ✅ 22 MB `.dol` | Not run yet |
+| Sega Dreamcast | `platform_dreamcast.c` | ✅ 14 MB `.elf` (`-Os`) | Flycast, title screen; not full speed |
+| PlayStation 2 | `platform_ps2.c` | ✅ 22 MB `.elf` | Not run yet |
+| PSP | `platform_psp.c` | ✅ 20 MB `EBOOT.PBP` | Not run yet |
+| PS Vita | `platform_vita.c` | ✅ 9.4 MB `.vpk` | Not run yet |
+| Android | SDL2 (NDK) | ✅ 10 MB `.apk` (x86_64) | Android emulator, title screen |
+| WebAssembly | SDL2 (Emscripten) | ✅ 14 MB `.wasm` | Browser: loads, renders, plays audio |
+| Xbox 360 | `platform_libxenon.c` | ✅ 28 MB `.xex` | Never: Xenia can't run libxenon homebrew; needs RGH/JTAG hardware |
+| Original Xbox | SDL2 (NXDK) | ✅ 13 MB `.xbe` | Hangs at the Xbox logo in xemu |
+
+Tested ROM: *Legend of Zelda, The - Link's Awakening DX (USA, Europe) (Rev 2)*,
+SHA-1 `1c091225688d966928cc74336dbef2e07d12a47c`.
+
+Multiplayer isn't part of these builds; it lives in
+[la-mp](https://github.com/sp00nznet/la-mp).
 
 ## Screenshots
 
@@ -22,252 +53,85 @@ Android, and in the browser via WebAssembly** (plus the Windows reference build)
 |-----------------------------------------------|
 | ![Dreamcast title](screenshots/dreamcast_title.png) |
 
-Built on:
+## Getting Started
 
-- **[`sp00nznet/LinksAwakening`](https://github.com/sp00nznet/LinksAwakening)**
-  — the upstream game project: the `rom_main.c` entry point, `rom.h`, and the
-  build glue. The recompiler output (`rom.c`, `rom_rom.c`) is generated locally
-  from your own ROM and is never committed.
-- **[`sp00nznet/gb-recompiled`](https://github.com/sp00nznet/gb-recompiled)**
-  (fork of [`arcanite24/gb-recompiled`](https://github.com/arcanite24/gb-recompiled))
-  — the runtime engine (`gbrt`, `ppu`, `audio`, `interpreter`, `menu_gui`, plus
-  the SDL2 platform layer in `platform_sdl.cpp` and `platform_sdl.h`). Vendored
-  at `runtime/`.
+Console builds need a cross-compiler per target, so there's no one-click
+route yet (see [ROADMAP.md](ROADMAP.md)). The quickest path is Docker, which
+has a ready-made image for most targets.
 
-> **Status** (Windows reference build works — 25 MB `rom.exe`):
->
-> | Platform | Backend | State |
-> | --- | --- | --- |
-> | **PlayStation 4** | `platform_sdl.cpp` (OpenOrbis SDL2) | ✅ **Running on real hardware.** Installable `linksawakening.pkg` (20 MB). |
-> | **PlayStation 3** | `platform_psl1ght.c` (native PSL1GHT) | ✅ **Running in RPCS3 at ~56 FPS** — title + gameplay. `EBOOT.BIN` (25 MB). |
-> | **Nintendo 3DS** | `platform_3ds.c` (native libctru) | ✅ **Running in Azahar *and* on a real New 2DS XL** — reaches gameplay. `linksawakening.3dsx` (22 MB). |
-> | **Nintendo Wii** | `platform_wii.c` (native libogc) | ✅ **Running in Dolphin** — title screen + intro. `linksawakening.dol` (24 MB). |
-> | **Sega Dreamcast** | `platform_dreamcast.c` (native KallistiOS) | ⚠ **Boots + renders in Flycast on a stock 16 MB Dreamcast** — title screen. Build `-Os` + stripped ELF (`linksawakening.elf`, 14 MB). Not yet full-speed — see Open work. |
-> | **Android** | `platform_sdl.cpp` (SDL2 + NDK) | ✅ **Running in the Android emulator** — title screen, fullscreen landscape with on-screen touch controls. `linksawakening.apk` (11 MB, x86_64). |
-> | **WebAssembly** | `platform_sdl.cpp` (Emscripten SDL2) | ✅ **Runs in the browser** — loads, renders, plays audio. Unblocked by the recompiler's dispatch-split + oversized-function demotion + a no-inline link. Canvas-centering polish pending. |
-> | **Xbox 360** | `platform_libxenon.c` (native libxenon) | ⚠ **Builds — full-game XEX (28 MB).** Xenia can't run it (Canary host-crashes, master guest-crashes on libxenon homebrew); needs real RGH/JTAG hardware to validate. |
-> | **Original Xbox** | `platform_sdl.cpp` (NXDK + SDL2) | ⚠ **Builds — `linksawakening.xbe` (13 MB).** Doesn't boot in xemu yet — hangs at the Xbox logo before the game renders; needs debugging. |
->
-> Big-endian targets (PS3, Wii, and the parked 360) are carried by the
-> AF/BC/DE/HL register-pair fix in `gbrt.h`. See
-> [docs/BUILDING.md](docs/BUILDING.md) to build any of them.
+1. **Get the source, with submodules:**
+   ```
+   git clone --recurse-submodules https://github.com/sp00nznet/linksawakening-portable.git
+   cd linksawakening-portable
+   ```
+2. **Generate the game code from your ROM.** Double-click
+   `LinksAwakening\Setup.cmd`: it asks for your ROM, writes
+   `LinksAwakening/gen/` and builds the Windows version too. (By hand: steps
+   1–7 of [LinksAwakening's Step by step](https://github.com/sp00nznet/LinksAwakening#step-by-step),
+   run inside `LinksAwakening/`.)
+3. **Build a target.** For example, the PSP with Docker, from PowerShell in the
+   repo folder:
+   ```
+   docker run --rm -v ${PWD}:/src pspdev/pspdev bash /src/scripts/build_psp.sh /src/build-psp
+   ```
+   The output is `build-psp/EBOOT.PBP`. The first build of any target takes
+   5–15 minutes because `rom.c` is ~109 MB of C.
 
----
+[docs/BUILDING.md](docs/BUILDING.md) has every target: its toolchain (Docker
+image or WSL install), the build command, and how to run the result.
 
-## The big architectural insight
+## Usage
 
-The upstream `gb-recompiled` runtime **already has a Platform Abstraction Layer**:
-`runtime/include/platform_sdl.h` defines a 13-function `gb_platform_*` contract
-that the rest of the runtime calls into (init, poll events, render frame, vsync,
-get joypad, save/load state, set title). `platform_sdl.cpp` is the SDL2
-implementation of that contract.
+Each build is a normal homebrew package for its platform: copy it over and
+launch it the way that platform runs homebrew (BUILDING.md has the details per
+target). Saves go to a `linksawakening` folder on the target's storage
+(`sd:/linksawakening/` on Wii and GameCube, `ms0:/linksawakening/` on PSP, and
+so on), so they're kept when you rebuild.
 
-That means **per-target porting is mostly: write a sibling `platform_<target>.cpp`
-that satisfies the same header.** No runtime refactor required.
+## Building from source
 
-```
-runtime/include/platform_sdl.h        ← the contract (do not rename)
-runtime/src/platform_sdl.cpp          ← SDL2 backend       (Windows / macOS / Linux / Android / WASM-via-SDL)
-runtime/src/platform_libxenon.cpp     ← Xbox 360 backend   (Phase 4)
-runtime/src/platform_nxdk.cpp         ← Original Xbox      (later)
-runtime/src/platform_psl1ght.cpp      ← PS3                (later)
-runtime/src/platform_kos.cpp          ← Dreamcast          (later)
-```
-
-The CMakeLists.txt picks which `platform_*.cpp` to build based on the target
-toolchain file (added in Phase 4).
-
----
-
-## Roadmap
-
-**Foundation** — shared groundwork, all done:
-
-- Repo scaffold and the Windows reference build.
-- PAL contract audit — [docs/PAL_AUDIT.md](docs/PAL_AUDIT.md): the runtime
-  already exposes a clean platform interface; the core engine makes no
-  direct SDL/ImGui calls.
-- Endianness + 32-bit audit — [docs/ENDIAN_AUDIT.md](docs/ENDIAN_AUDIT.md):
-  the one fix big-endian targets need is the AF/BC/DE/HL register-pair
-  layout in `gbrt.h`.
-- gb-recompiled cross-compile patches: `LA_HAS_MULTIPLAYER` / `LA_HAS_IMGUI`
-  build gates, plain-C menu/asset-viewer stubs, and the big-endian
-  register-pair fix — so the runtime builds for any target.
-
-**Platforms** — see the [status table](#linksawakening-portable) above:
-PS4, PS3, 3DS, Wii, Android, and WebAssembly are playable; the Sega Dreamcast
-boots and renders (full-speed WIP); Xbox 360 and Nintendo Switch are parked.
-
-**Open work:**
-
-- **WebAssembly polish** — the wasm build runs, but the emscripten `<canvas>`
-  isn't centred/sized on the page (gameplay is unaffected). The build also
-  links at `-O0` to dodge `wasm-opt`'s function-merging; a tuned
-  `wasm-opt` pass that limits inlining would let it link optimized.
-- **Xbox 360** — the full-game XEX builds (`build_libxenon.sh` → a 28 MB
-  `linksawakening.xex`, big-endian, carried by the `gbrt.h` register-pair
-  fix). It can't be validated in an emulator: Xenia Canary host-crashes
-  and Xenia master guest-crashes on libxenon homebrew that drives the
-  video/audio hardware directly. The port is code-complete — it needs a
-  real RGH/JTAG console to verify.
-- **Original Xbox** — builds via NXDK (`build_xbox.sh` → a 13 MB
-  `linksawakening.xbe`, reusing `platform_sdl.cpp` over NXDK's SDL2). It
-  doesn't boot in xemu yet — the Xbox logo shows but the game appears to
-  hang in init before rendering its first frame. Needs debugging (likely
-  in `gb_platform_init` against NXDK's SDL2).
-- **Sega Dreamcast** — boots and renders the title screen in Flycast on a
-  stock 16 MB Dreamcast (`cmake/test/build_dreamcast.sh`, native KallistiOS:
-  RGB565 framebuffer, snd_stream audio, maple input, VMU saves; built via the
-  `kazade/dreamcast-sdk` Docker image). Two build requirements: `OPT=-Os` (the
-  `-O2` image is ~15.9 MB and won't fit 16 MB; `-Os` → ~13.9 MB — the same
-  `-O2`-bloat lesson as WASM/Xbox) and a **stripped ELF** (the 50 MB unstripped
-  debug ELF loads then exits instantly in flycast; the build auto-strips to the
-  bootable ~14 MB `linksawakening.elf`). **Known issue, tabled:** not yet
-  full-speed — gameplay is choppy. Confirmed CPU/frame-pacing bound, *not*
-  audio: a silent `-DLA_DC_NO_AUDIO` build runs no faster.
-- **Nintendo Switch** — feasible via the SDL2 backend (like Android), but
-  parked alongside the 360: needs a modded console or a working homebrew
-  emulator to develop and test against.
-- **Settings persistence** — a `gb_platform_fs_read/write` PAL extension so
-  rebindable controls survive on targets without plain stdio.
-- **More targets** — **GameCube** (libogc), **PSP** (PSPSDK), **PS Vita**
-  (vita2d), and **PS2** (gsKit/PS2SDK) backends are scaffolded
-  (`runtime/src/platform_<x>.c` + `cmake/test/build_<x>.sh`, same PAL pattern)
-  but not yet built or verified — no toolchains set up for them locally yet.
-
----
-
-## Repository layout
+- **Build scripts:** `scripts/build_<target>.sh`. They find the repo through
+  `scripts/env.sh`, so they run from any checkout, under WSL or inside Docker
+  with the repo mounted at `/src`.
+- **The game and runtime:** the `LinksAwakening/` submodule. It holds
+  `rom_main.c` (one entry point for every target) and, inside it,
+  `gbrecomp/runtime/` with every `platform_*.c` backend.
+- **Porting notes:** [docs/PORTING.md](docs/PORTING.md) (the platform contract),
+  [docs/ENDIAN_AUDIT.md](docs/ENDIAN_AUDIT.md) (big-endian targets),
+  [docs/PAL_AUDIT.md](docs/PAL_AUDIT.md).
 
 ```
-linksawakening-portable/
-├── README.md                       # this file — keep the phase table current
-├── .gitignore                      # ROM, recompiler output, build artifacts excluded
-├── CMakeLists.txt                  # Windows/SDL2 build (LA_MULTIPLAYER=ON by default)
-├── rom_main.c                      # Entry point (from sp00nznet/LinksAwakening)
-├── rom.h                           # Generated declarations
-├── rom.c                           # gitignored — 115 MB recompiler output
-├── rom_rom.c                       # gitignored — 6.3 MB ROM-as-C-array
-├── runtime/                        # Vendored from gb-recompiled
-│   ├── include/
-│   │   ├── platform_sdl.h          # ★ THE PAL — implement this per target
-│   │   ├── gbrt.h, ppu.h, audio.h, hwtrace.h, gbrt_debug.h
-│   ├── src/
-│   │   ├── gbrt.c                  # 52 KB — CPU + memory + bank switching
-│   │   ├── ppu.c                   # 23 KB — scanline PPU with CGB support
-│   │   ├── audio.c                 # 23 KB — APU mixer
-│   │   ├── interpreter.c           # 39 KB — fallback for unresolved indirect jumps
-│   │   ├── hwtrace.c               # 5 KB  — debug trace
-│   │   ├── platform_sdl.cpp        # 38 KB — SDL2 PAL implementation
-│   │   ├── menu_gui.cpp            # 41 KB — ImGui menu
-│   │   ├── asset_viewer.cpp        # 27 KB — debug asset viewer
-│   │   └── multiplayer/            # mp_*.cpp (only built when LA_MULTIPLAYER=ON)
-│   └── third_party/
-│       ├── imgui/                  # base menu uses this — always built
-│       └── enet/                   # only built when LA_MULTIPLAYER=ON
-├── android/                        # Android Gradle project (SDL2 backend; SDL vendored at build time)
-├── tools/                          # Debug tracing tools (SameBoy headless ref tracer)
-└── docs/
-    └── PORTING.md                  # PAL interface, endianness checklist, backend matrix
+.
+├── LinksAwakening/   submodule: entry point, gen/ (your ROM's code), gbrecomp/ (runtime)
+├── scripts/          build_<target>.sh, env.sh, PS4 packaging, WASM shell
+├── android/          Gradle project (SDL2 is staged in at build time)
+├── xbox/             NXDK Makefile
+├── docs/             BUILDING.md and the porting notes
+└── screenshots/
 ```
-
----
-
-## ROM handling — no copyrighted content in this repo
-
-This repository contains **no game ROM and no recompiled game code.** The
-three recompiler-output files — `rom.c`, `rom.h`, `rom_rom.c` — are derived
-from a Game Boy ROM and are `.gitignore`d. You generate them yourself by
-running [gb-recompiled](https://github.com/sp00nznet/gb-recompiled) against
-a **legally obtained** Link's Awakening DX ROM, then drop them at the repo
-root. See [docs/BUILDING.md](docs/BUILDING.md).
-
-What *is* in the repo: the platform backends, build scripts, and the
-vendored open-source runtime — all of it freely redistributable (see
-[Credits](#credits)).
-
----
-
-## Building
-
-Full step-by-step instructions for every platform — toolchain setup, build
-commands, and how to install/run — are in **[docs/BUILDING.md](docs/BUILDING.md)**.
-
-Quick start for the Windows reference build (MSYS2 + MinGW64 + SDL2 + CMake + Ninja):
-
-```bash
-export PATH="/c/msys64/mingw64/bin:$PATH"
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-./build/rom.exe
-```
-
----
-
-## What gets reused vs replaced per platform
-
-**Reused as-is on every target:**
-
-- `rom.c`, `rom.h`, `rom_main.c` (well — `rom_main.c` after the Phase 6 MP guard)
-- `rom_rom.c` (ROM data as byte array — already endian-clean)
-- All of `runtime/src/*.c` (CPU, PPU, audio, interpreter, hwtrace)
-- `runtime/src/menu_gui.cpp` and `asset_viewer.cpp` (depend only on ImGui and the PAL contract)
-
-**Per-platform:**
-
-- `runtime/src/platform_<target>.cpp` — the PAL implementation
-- ImGui backend — for SDL2 it's `imgui_impl_sdl2.cpp` + `imgui_impl_sdlrenderer2.cpp`;
-  for libxenon it'd be a custom Xenos backend (or stub the menu entirely)
-- CMake toolchain file (`cmake/toolchain-<target>.cmake`)
-- Packaging glue (`.xex`, `.apk`, `.wasm`)
-
-**Audit-then-keep:**
-
-- Anything in the runtime that does `*(uint16_t*)ptr` / reinterpret loads
-  — needs byte-by-byte access on big-endian (PPC) targets
-- 64-bit assumptions in pointer math (most targets are 32-bit user space)
-
----
 
 ## Credits
 
-**Game**
-- *The Legend of Zelda: Link's Awakening DX* © 1993, 1998 Nintendo / Grezzo.
-  Not affiliated with or endorsed by Nintendo. No game ROM or game code is
-  distributed here.
-
-**Recompilation**
-- [`arcanite24/gb-recompiled`](https://github.com/arcanite24/gb-recompiled) — the
-  Game Boy static recompiler, and [`sp00nznet/gb-recompiled`](https://github.com/sp00nznet/gb-recompiled)
-  the runtime fork vendored at `runtime/`.
-- [`sp00nznet/LinksAwakening`](https://github.com/sp00nznet/LinksAwakening) — the
-  upstream LA DX game project.
-- [LADX-Disassembly](https://github.com/zladx/LADX-Disassembly) contributors — the
-  reverse-engineering work the recompiler builds on.
-- [SameBoy](https://github.com/LIJI32/SameBoy) by LIJI32 — reference emulator used
-  for hardware-trace comparison.
-- Multiplayer overlay (optional): [`sp00nznet/la-mp`](https://github.com/sp00nznet/la-mp).
-
-**Vendored libraries** (`runtime/third_party/`)
-- [Dear ImGui](https://github.com/ocornut/imgui) by Omar Cornut — MIT.
-- [ENet](https://github.com/lsalzman/enet) by Lee Salzman — MIT.
-
-**Platform toolchains & SDKs**
-- 3DS: [devkitPro / devkitARM + libctru](https://devkitpro.org/).
-- Wii: [devkitPro / devkitPPC + libogc](https://devkitpro.org/).
-- PS3: [PSL1GHT](https://github.com/ps3dev/PSL1GHT) / the ps3dev project.
-- PS4: [OpenOrbis PS4 Toolchain](https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain).
-- Android: [Android NDK + SDK](https://developer.android.com/ndk) — reuses the SDL2 Android backend.
-- Xbox 360: [libxenon](https://github.com/Free60Project/libxenon) / Free60.
-- WebAssembly: [Emscripten](https://emscripten.org/).
-- SDL2: [libsdl-org/SDL](https://github.com/libsdl-org/SDL).
+- Recompiler and runtime: [arcanite24/gb-recompiled](https://github.com/arcanite24/gb-recompiled),
+  with our changes in [sp00nznet/gb-recompiled](https://github.com/sp00nznet/gb-recompiled)
+- Game knowledge: the [LADX-Disassembly](https://github.com/zladx/LADX-Disassembly) contributors
+- Toolchains: [devkitPro](https://devkitpro.org/) (Wii, GameCube, 3DS),
+  [PSL1GHT](https://github.com/ps3dev/PSL1GHT) (PS3),
+  [OpenOrbis](https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain) (PS4),
+  [KallistiOS](https://github.com/KallistiOS/KallistiOS) (Dreamcast),
+  [PS2SDK](https://github.com/ps2dev/ps2sdk) and [gsKit](https://github.com/ps2dev/gsKit) (PS2),
+  [pspdev](https://github.com/pspdev/pspdev) (PSP), [VitaSDK](https://vitasdk.org/) (Vita),
+  [libxenon](https://github.com/Free60Project/libxenon) (Xbox 360),
+  [nxdk](https://github.com/XboxDev/nxdk) (original Xbox),
+  [Emscripten](https://emscripten.org/), the Android NDK, and [SDL2](https://github.com/libsdl-org/SDL)
 
 ## License
 
-The platform-port code original to this repository (the `platform_*` backends,
-build scripts, CMake glue, `rom_main.c`) is released under the **MIT License** —
-see [LICENSE](LICENSE). Vendored components keep their own licenses (ImGui and
-ENet ship `LICENSE` files under `runtime/third_party/`).
+The code in this repository is [MIT](LICENSE).
 
-This is a non-commercial, educational / preservation project. It distributes no
-copyrighted Nintendo content — you must supply your own legally obtained ROM.
+That covers the build scripts, packaging and documentation. It does not and
+cannot cover *The Legend of Zelda: Link's Awakening DX*: the game's code, art,
+audio and data belong to Nintendo, are not distributed here, and you need your
+own legitimate copy. The C generated from your ROM is a derivative of the game
+and is never committed. This project is not affiliated with or endorsed by
+Nintendo.

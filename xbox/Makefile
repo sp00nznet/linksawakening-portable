@@ -14,12 +14,13 @@ NXDK_DIR ?= $(HOME)/nxdk
 NXDK_SDL  = y
 NXDK_CXX  = y
 
-LA = $(CURDIR)/..
-RT = $(LA)/runtime
+LA  = $(CURDIR)/../LinksAwakening
+RT  = $(LA)/gbrecomp/runtime
+GEN = $(LA)/gen
 
 SRCS = \
-	$(LA)/rom.c \
-	$(LA)/rom_rom.c \
+	$(GEN)/rom.c \
+	$(GEN)/rom_rom.c \
 	$(LA)/rom_main.c \
 	$(RT)/src/gbrt.c \
 	$(RT)/src/ppu.c \
@@ -36,7 +37,7 @@ SRCS = \
 # ImGui + multiplayer stay off (plain-C stubs), same as the PS4 build.
 # -Os: the Xbox has only 64 MB RAM and the .xbe image is loaded whole —
 # optimize the ~105 MB recompiled rom.c for size to keep the image small.
-CFLAGS   += -Os -DGB_HAS_SDL2 -DGB_RECOMPILED_DISPATCH -I$(LA) -I$(RT)/include -I$(RT)/src -w
-CXXFLAGS += -Os -DGB_HAS_SDL2 -DGB_RECOMPILED_DISPATCH -I$(LA) -I$(RT)/include -I$(RT)/src -w
+CFLAGS   += -Os -DGB_HAS_SDL2 -DGB_RECOMPILED_DISPATCH -I$(GEN) -I$(RT)/include -I$(RT)/src -w
+CXXFLAGS += -Os -DGB_HAS_SDL2 -DGB_RECOMPILED_DISPATCH -I$(GEN) -I$(RT)/include -I$(RT)/src -w
 
 include $(NXDK_DIR)/Makefile

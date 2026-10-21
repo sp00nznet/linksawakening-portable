@@ -2,21 +2,6 @@ MIT License
 
 Copyright (c) 2026 sp00nznet
 
-The above applies to the platform-port code original to this repository:
-the platform_* backends, the build scripts under cmake/, the CMake glue,
-rom_main.c, and the documentation.
-
-Vendored third-party components retain their own licenses:
-  - runtime/ is vendored from the gb-recompiled project; see
-    https://github.com/sp00nznet/gb-recompiled and
-    https://github.com/arcanite24/gb-recompiled
-  - runtime/third_party/imgui  — Dear ImGui, MIT (see its LICENSE.txt)
-  - runtime/third_party/enet   — ENet, MIT (see its LICENSE)
-
-This project distributes no game ROM and no recompiled game code. "The
-Legend of Zelda: Link's Awakening DX" is a trademark of Nintendo; this
-project is not affiliated with or endorsed by Nintendo.
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

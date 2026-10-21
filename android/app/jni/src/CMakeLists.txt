@@ -1,15 +1,17 @@
 cmake_minimum_required(VERSION 3.6)
 project(LINKSAWAKENING)
 
-# The recompiled game + vendored runtime live in the linksawakening-portable
-# repo. rom.c / rom.h / rom_rom.c are generated locally and gitignored.
-set(LA "D:/ports/la360")
-set(RT "${LA}/runtime")
+# Game sources come from the LinksAwakening submodule at the repo root:
+# rom_main.c, the runtime (gbrecomp/runtime) and gen/ (generated locally
+# from your ROM, never committed).
+set(LA "${CMAKE_CURRENT_SOURCE_DIR}/../../../../LinksAwakening")
+set(RT "${LA}/gbrecomp/runtime")
+set(GEN "${LA}/gen")
 
 add_library(main SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/android_main.c
-    ${LA}/rom.c
-    ${LA}/rom_rom.c
+    ${GEN}/rom.c
+    ${GEN}/rom_rom.c
     ${LA}/rom_main.c
     ${RT}/src/gbrt.c
     ${RT}/src/ppu.c
@@ -22,7 +24,7 @@ add_library(main SHARED
 )
 
 target_include_directories(main PRIVATE
-    ${LA}
+    ${GEN}
     ${RT}/include
     ${RT}/src
 )

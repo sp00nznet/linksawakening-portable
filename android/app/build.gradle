@@ -13,8 +13,12 @@ android {
         versionName "1.0"
         externalNativeBuild {
             cmake {
+                // SDL_CCACHE=OFF: SDL otherwise wraps the NDK compiler in any
+                // ccache on PATH, and an unrelated old one (e.g. a PS3 SDK's)
+                // breaks every compile.
                 arguments "-DANDROID_APP_PLATFORM=android-21",
-                          "-DANDROID_STL=c++_static"
+                          "-DANDROID_STL=c++_static",
+                          "-DSDL_CCACHE=OFF"
                 // arm64-v8a builds for physical phones — add it here, but it
                 // doubles the (slow) rom.c compile. x86_64 covers the emulator.
                 abiFilters 'x86_64'

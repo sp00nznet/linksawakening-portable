@@ -1,5 +1,7 @@
 # Porting design
 
+> Paths like `runtime/...` below are inside gb-recompiled, at `LinksAwakening/gbrecomp/runtime/` in this repo.
+
 The runtime already has a Platform Abstraction Layer. This doc describes the
 contract (`runtime/include/platform_sdl.h`), what's known about each call's
 semantics, and what each backend has to deliver.
@@ -94,8 +96,8 @@ Default to option 1 when the audit finds violations.
 
 "scaffold" = backend file + `build_<x>.sh` written to the established contract,
 not yet compiled (toolchains live under WSL; the Vita/PSP/PS2/DC SDKs may need
-installing first). Build scripts live in `cmake/test/build_<x>.sh` and run under
-WSL against `/mnt/d/ports/la360`. Per-target gotchas to verify on first build:
+installing first). Build scripts live in `scripts/build_<x>.sh` and run under
+WSL from this repo (paths resolve via `scripts/env.sh`). Per-target gotchas to verify on first build:
 
 - **GameCube** — saves need an SD adapter (SD Gecko / SD2SP2); highest-confidence
   port since it shares libogc with the working Wii backend.

@@ -1,5 +1,7 @@
 # Phase 3 — Endianness + 32-bit audit
 
+> Paths like `runtime/...` below are inside gb-recompiled, at `LinksAwakening/gbrecomp/runtime/` in this repo.
+
 Hunt for little-endian-specific patterns that will break on big-endian PowerPC
 (Xbox 360 Xenon, PS3 Cell PPE) and for 32-bit user-space assumptions that
 matter on every non-x86-64 target.

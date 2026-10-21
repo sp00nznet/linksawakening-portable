@@ -1,4 +1,4 @@
-# From upstream la-dx-recompiled
+# Build output
 build/
 build-*/
 *.log
@@ -7,9 +7,11 @@ build-*/
 *.trace
 *.ini
 
-# Recompiler output (regenerate locally from your ROM via gb-recompiled)
+# Recompiler output lives in LinksAwakening/gen/ (ignored by that repo).
+# These catch a stray copy at the root.
 rom.c
 rom_rom.c
+rom.h
 
 # ROM (never commit; supply your own legally obtained copy)
 *.gb
