@@ -16,5 +16,7 @@ jobs:
         with:
           submodules: recursive
       - run: for f in setup.sh scripts/*.sh; do bash -n "$f" || exit 1; done
-      - run: grep -v '^#' scripts/targets.tsv | awk -F'\t' 'NF != 5 { print "targets.tsv line " NR ": " NF " fields"; bad=1 } END { exit bad }'
+      - name: targets.tsv has 5 tab-separated fields per line
+        run: |
+          grep -v '^#' scripts/targets.tsv | awk -F'\t' 'NF != 5 { print "line " NR " has " NF " fields"; bad=1 } END { exit bad }'
       - run: python3 tools/check_launcher_pins.py
