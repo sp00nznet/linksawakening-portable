@@ -40,6 +40,10 @@ git clone --recurse-submodules https://github.com/sp00nznet/linksawakening-porta
 cd linksawakening-portable
 ```
 
+On Windows, `Filename too long` during the clone means the nested submodules
+hit the 260-character path limit: `git config --global core.longpaths true`,
+then `git submodule update --init --recursive`.
+
 ### The recompiled game files
 
 Generated from your own ROM into `LinksAwakening/gen/`, which is gitignored and

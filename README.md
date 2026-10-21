@@ -64,6 +64,10 @@ has a ready-made image for most targets.
    git clone --recurse-submodules https://github.com/sp00nznet/linksawakening-portable.git
    cd linksawakening-portable
    ```
+   Trip-up: on Windows, if the clone fails with `Filename too long`, the
+   nested submodules have hit the 260-character path limit. Run
+   `git config --global core.longpaths true` (or clone to a shorter path) and
+   then `git submodule update --init --recursive`.
 2. **Generate the game code from your ROM.** Double-click
    `LinksAwakening\Setup.cmd`: it asks for your ROM, writes
    `LinksAwakening/gen/` and builds the Windows version too. (By hand: steps
