@@ -77,3 +77,10 @@ Thumbs.db
 # Allow docs/screenshots PNGs to be committed
 !docs/**/*.png
 !screenshots/**/*.png
+
+# Setup output
+builds/
+build-logs/
+build-tools/
+setup.log
+* (recomp).*

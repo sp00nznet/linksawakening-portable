@@ -14,7 +14,7 @@
 
 set -e
 
-export OO_PS4_TOOLCHAIN="$HOME/PS4Toolchain"
+export OO_PS4_TOOLCHAIN="${OO_PS4_TOOLCHAIN:-$HOME/PS4Toolchain}"
 TC="$OO_PS4_TOOLCHAIN"
 . "$(dirname "$0")/env.sh"
 OUT="${1:-$HOME/la360-ps4}"   # ~ persists across WSL restarts; /tmp does not
@@ -57,9 +57,11 @@ compile_c "$LA/rom_main.c" "rom_main.o";  OBJS+=("rom_main.o")
 compile_c "$GEN/rom_rom.c"  "rom_rom.o";   OBJS+=("rom_rom.o")
 
 echo '[3/4] Recompiled game — rom.c (~115 MB, this is the slow one)'
+if fresh rom.o; then echo "  rom.o is up to date (skipping)"; OBJS+=("rom.o"); else
 compile_c "$GEN/rom.c" "rom.o";  OBJS+=("rom.o")
+fi
 
-echo '[4/4] Link + create-fself'
+echo '[4/4] Link + eboot.bin'
 $LD "${OBJS[@]}" -o la360.elf \
     -m elf_x86_64 -pie --script "$TC/link.x" --eh-frame-hdr \
     -L"$TC/lib" \
@@ -68,9 +70,16 @@ $LD "${OBJS[@]}" -o la360.elf \
     -lSDL2 \
     "$TC/lib/crt1.o"
 
-"$TC/bin/linux/create-fself" \
-    -in=la360.elf -out=la360.oelf \
-    --eboot eboot.bin --paid 0x3800000000000011
+# Older OpenOrbis releases ship create-fself; the current one (the
+# openorbisofficial/toolchain image) replaced it with create-eboot.
+if [ -x "$TC/bin/linux/create-fself" ]; then
+    "$TC/bin/linux/create-fself" \
+        -in=la360.elf -out=la360.oelf \
+        --eboot eboot.bin --paid 0x3800000000000011
+else
+    # -out is the intermediate .oelf; it writes eboot.bin beside it.
+    "$TC/bin/linux/create-eboot" -in la360.elf -out la360.oelf -paid 0x3800000000000011
+fi
 
 echo
 echo "=== output ==="

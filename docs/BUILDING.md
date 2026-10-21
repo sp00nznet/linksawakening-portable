@@ -25,6 +25,17 @@ and how to run each one.
 
 ---
 
+## All targets at once
+
+`Setup.cmd` / `tools\setup.ps1` (Windows) and `setup.sh` (Linux, macOS) do
+everything below in Docker: turn your ROM into C with `scripts/recomp.sh`,
+then build every line of [`scripts/targets.tsv`](../scripts/targets.tsv),
+which names each target's Docker image and command. The sections below are
+the same builds one at a time, plus the WSL toolchain installs that were used
+before the Docker images.
+
+---
+
 ## Prerequisites common to all targets
 
 ### The source
@@ -259,42 +270,27 @@ On-screen touch controls (d-pad + A/B/Start/Select) are drawn by
 `platform_sdl.cpp` behind `#ifdef __ANDROID__`; ImGui + multiplayer are off.
 
 The Gradle project lives at `android/`. SDL2 is **not vendored** in the
-repo — `build_android.ps1` stages an SDL2 source tree into it at build time.
-This build runs natively on Windows (not WSL).
+repo: `scripts/build_android.sh` stages an SDL2 source tree into it at build
+time.
 
-### One-time toolchain setup (Windows)
+### Build (Docker)
 
-1. **JDK 17+** — e.g. [Eclipse Temurin](https://adoptium.net/).
-2. **Android SDK command-line tools** — download from the
-   [Android Studio page](https://developer.android.com/studio#command-line-tools-only),
-   unzip so that `sdkmanager.bat` ends up at
-   `D:\Android\Sdk\cmdline-tools\latest\bin\`, then:
-
-   ```powershell
-   $sdk = "D:\Android\Sdk"
-   $sm  = "$sdk\cmdline-tools\latest\bin\sdkmanager.bat"
-   & $sm --sdk_root=$sdk --licenses
-   & $sm --sdk_root=$sdk platform-tools "platforms;android-34" `
-       "build-tools;34.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
-   ```
-
-3. **SDL2 source** — download the SDL2 2.32.x source release from
-   [libsdl.org](https://github.com/libsdl-org/SDL/releases) and unzip it
-   (e.g. to `D:\ports\android-build\SDL2-2.32.10`).
-
-### Build
+`docker/android.Dockerfile` is the toolchain: SDK 34, NDK 27.2, CMake 3.22.1
+and the SDL2 2.32.10 source. Build the image once, then the APK:
 
 ```powershell
-powershell -File scripts\build_android.ps1 `
-    -SdlSrc D:\ports\android-build\SDL2-2.32.10 -SdkDir D:\Android\Sdk
+docker build -t linksawakening-android -f docker/android.Dockerfile docker
+docker run --rm -v ${PWD}:/src -w /src linksawakening-android bash scripts/build_android.sh /src/build-android
 ```
 
-The script stages SDL2 into `android/`, then runs `gradlew assembleDebug` —
-the NDK CMake build compiles `rom.c` + the runtime + `platform_sdl.cpp` into
-`libmain.so`. The default ABI is `x86_64` (the emulator); add `arm64-v8a` to
-`abiFilters` in `android/app/build.gradle` for physical phones.
+Without Docker, run `scripts/build_android.sh` anywhere with bash, with
+`ANDROID_HOME` set to an SDK holding those packages and `SDL2_SRC` to the SDL2
+source. Gradle's cache goes in `build-android/.gradle`. The NDK CMake build
+compiles `rom.c` + the runtime + `platform_sdl.cpp` into `libmain.so`. The
+default ABI is `x86_64` (the emulator); add `arm64-v8a` to `abiFilters` in
+`android/app/build.gradle` for physical phones.
 
-**Output:** `build-android/linksawakening.apk`.
+**Output:** `build-android/linksawakening.apk` (~10 MB).
 
 ### Run
 
@@ -344,7 +340,7 @@ wsl -d Debian -- bash scripts/build_wasm.sh
 Compiles `rom.c` + runtime + `platform_sdl.cpp` with `emcc` and links with
 the minimal custom shell `scripts/wasm_shell.html`.
 
-**Output:** `build-wasm/la360.{html,js,wasm}`.
+**Output:** `build-wasm/linksawakening.{html,js,wasm}`.
 
 ### Run
 
@@ -354,9 +350,9 @@ WebAssembly must be served over HTTP (not `file://`):
 wsl -d Debian -- python3 -m http.server 8000 --directory build-wasm
 ```
 
-Then open `http://localhost:8000/la360.html`. Confirm no function exceeds
+Then open `http://localhost:8000/linksawakening.html`. Confirm no function exceeds
 the wasm limit with
-`python3 scripts/wasm_funcsizes.py build-wasm/la360.wasm`.
+`python3 scripts/wasm_funcsizes.py build-wasm/linksawakening.wasm`.
 
 ---
 
@@ -365,39 +361,28 @@ the wasm limit with
 PowerPC big-endian. Native libxenon backend (`platform_libxenon.c`); the
 `gbrt.h` register-pair fix (shared with PS3/Wii) carries big-endianness.
 
-The full-game XEX builds and is hardware-ready, but **cannot be validated
-in an emulator** — Xenia crashes on libxenon homebrew that drives the
-video/audio hardware directly (Canary host-crashes; master runs further
-then reports "guest has crashed"). A real RGH/JTAG console is needed.
+It builds and is hardware-ready, but **cannot be validated in an
+emulator**: Xenia crashes on libxenon homebrew that drives the video/audio
+hardware directly (Canary host-crashes; master runs further then reports
+"guest has crashed"). A real RGH/JTAG console is needed.
 
-### One-time toolchain setup (in WSL Debian)
-
-libxenon's `xenon-gcc` toolchain, installed to `/usr/local/xenon`:
-
-```bash
-git clone https://github.com/Free60Project/libxenon ~/libxenon
-cd ~/libxenon/toolchain
-./build-xenon-toolchain toolchain
-./build-xenon-toolchain libs
-```
-
-`elf2xex` (the ELF→XEX wrapper) is expected at `C:\xbox360nfs\tools\elf2xex`.
-
-### Build
+### Build (Docker)
 
 ```powershell
-wsl -d Debian -- bash scripts/build_libxenon.sh
+docker run --rm -v ${PWD}:/src -w /src free60/libxenon bash scripts/build_libxenon.sh /src/build-xenon
 ```
 
 Compiles `rom.c` + runtime + `platform_libxenon.c` with `xenon-gcc`, links
-against libxenon, then runs `xenon-objcopy` + `elf2xex`.
+against libxenon, and writes a stripped `la360.elf32`. Set `ELF2XEX` to an
+ELF-to-XEX converter to also get a `.xex` (only useful for Xenia
+experiments; there's none in the image).
 
-**Output:** `build-xenon/linksawakening.xex` (~28 MB).
+**Output:** `build-xenon/la360.elf32` (~28 MB).
 
 ### Run
 
-- **Hardware:** copy the XEX to a USB drive or the HDD of an RGH/JTAG
-  Xbox 360 and launch it from a homebrew dashboard (XeXMenu, Aurora).
+- **Hardware:** put the `.elf32` on a USB drive as `xenon.elf` and boot XeLL
+  on an RGH/JTAG Xbox 360.
 - **Emulator:** Xenia does not currently run it (see above).
 
 ---

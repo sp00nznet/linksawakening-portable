@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Continue'
 $chrome  = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 $prof    = "C:\Users\nedch\AppData\Local\Temp\chrome-wasm"
 $port    = 9223
-$url     = "http://localhost:8778/la360.html"
+$url     = "http://localhost:8778/linksawakening.html"
 
 Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" |
     Where-Object { $_.CommandLine -like '*chrome-wasm*' } |

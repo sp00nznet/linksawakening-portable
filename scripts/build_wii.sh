@@ -50,7 +50,9 @@ cc1 "$LA/rom_main.c" "rom_main.o"
 cc1 "$GEN/rom_rom.c"  "rom_rom.o"
 
 echo '[3/4] Recompiled game — rom.c (~115 MB, slow)'
+if fresh rom.o; then echo "  rom.o is up to date (skipping)"; OBJS+=("rom.o"); else
 cc1 "$GEN/rom.c" "rom.o"
+fi
 
 echo '[4/4] Link + elf2dol'
 "$CC" "${OBJS[@]}" $LDFLAGS $LIBS -o la360.elf

@@ -8,14 +8,13 @@
 2. **Follow the gb-recompiled upstream sync.** When the fork is rebuilt on
    upstream (see LinksAwakening's ROADMAP), rebuild every target here: the
    PPU and context fields change, so each console backend needs checking.
-3. **One-command builds.** A `Build.cmd <target>` that runs the target's Docker
-   image, so a console build is one step after `LinksAwakening\Setup.cmd`.
-   Docker images exist for PS3, PSP, Vita, PS2, Dreamcast and the original
-   Xbox. Wii, GameCube, 3DS, 360, PS4 and WASM still use a WSL install.
-4. **netlab recipes**, so these builds run on the farm instead of the workstation.
+3. **netlab recipes**, so these builds run on the farm instead of the workstation.
 
 ## Open problems
 
+- **Setup builds one console at a time** (about 2.5 hours from scratch on a
+  12-core machine). Building two or three at once would cut that, at about
+  4 GB of RAM per build.
 - **Dreamcast** isn't full speed. It's CPU/frame-pacing bound, not audio: a
   silent `-DLA_DC_NO_AUDIO` build runs no faster. It must be built `-Os` and
   stripped to fit 16 MB.

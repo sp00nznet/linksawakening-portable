@@ -6,13 +6,14 @@
 # (same as the PS4 build). The browser owns the event loop — rom_main.c
 # uses emscripten_set_main_loop when __EMSCRIPTEN__ is defined.
 #
-# Pipeline: emcc -> la360.html + la360.js + la360.wasm
+# Pipeline: emcc -> linksawakening.html + linksawakening.js + linksawakening.wasm
 #
 # Usage:  bash build_wasm.sh [output-dir]
 
 set -e
 
-source "$HOME/emsdk/emsdk_env.sh" >/dev/null 2>&1
+# emcc is on PATH in the emscripten/emsdk image; a WSL install sources emsdk_env.sh.
+command -v emcc >/dev/null || source "$HOME/emsdk/emsdk_env.sh" >/dev/null 2>&1
 
 . "$(dirname "$0")/env.sh"
 OUT="${1:-$HOME/la360-wasm}"
@@ -46,10 +47,12 @@ echo '[3/4] Recompiled game — rom.c (~115 MB, slow)'
 # single function over WebAssembly's 7.65 MB per-function limit. Disabling
 # inlining keeps every recompiled function a separate (bounded) wasm function.
 echo '  cc  rom.c  (-fno-inline)'
+if fresh rom.o; then echo "  rom.o is up to date (skipping)"; else
 emcc $CFLAGS -fno-inline -c "$GEN/rom.c" -o "rom.o"
+fi
 OBJS+=("rom.o")
 
-echo '[4/4] Link -> la360.html'
+echo '[4/4] Link -> linksawakening.html'
 # Link at -O0: at -O1+ emscripten runs wasm-opt, whose whole-program
 # inliner merges the ~9000 small recompiled functions back together until
 # one exceeds WebAssembly's 7.65 MB per-function cap. -O0 skips wasm-opt,
@@ -64,12 +67,12 @@ em++ -O0 -sUSE_SDL=2 \
     -sSTACK_SIZE=1048576 \
     --shell-file "$ROOT/scripts/wasm_shell.html" \
     "${OBJS[@]}" \
-    -o la360.html
+    -o linksawakening.html
 
 echo
 echo '=== output ==='
-ls -lh la360.html la360.js la360.wasm 2>/dev/null
+ls -lh linksawakening.html linksawakening.js linksawakening.wasm 2>/dev/null
 if [ -d "$ROOT/build-wasm" ]; then
-    cp la360.html la360.js la360.wasm "$ROOT/build-wasm/" 2>/dev/null || true
+    cp linksawakening.html linksawakening.js linksawakening.wasm "$ROOT/build-wasm/" 2>/dev/null || true
     echo "Copied to $ROOT/build-wasm/"
 fi

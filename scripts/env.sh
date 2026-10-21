@@ -23,3 +23,7 @@ if [ ! -f "$GEN/rom.c" ]; then
     echo "$GEN/rom.c is missing. Generate it from your ROM first (docs/BUILDING.md, step 1)." >&2
     exit 1
 fi
+
+# fresh FILE: FILE exists and is newer than gen/rom.c. The scripts use it to
+# skip recompiling rom.c (5-15 minutes) on a rerun.
+fresh() { [ -f "$1" ] && [ "$1" -nt "$GEN/rom.c" ]; }

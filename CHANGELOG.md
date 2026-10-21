@@ -6,7 +6,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- One-step build of every console from your ROM, all in Docker: `Setup.cmd` /
+  `tools/setup.ps1` on Windows, `setup.sh` on Linux and macOS. It turns the
+  ROM into C (`scripts/recomp.sh`), builds each line of `scripts/targets.tsv`
+  in that console's toolchain image, collects the results in `builds/`, and
+  says which built and what's known to work. A failed console doesn't stop the
+  rest, and a rerun skips what's done.
+- Installers for Windows, Linux and macOS ([recomp-launcher](https://github.com/sp00nznet/recomp-launcher)
+  with `launcher/launcher.json`), built by CI on every push and attached to `v*`
+  releases. They contain no game code.
+- `docker/android.Dockerfile` and `scripts/build_android.sh`, replacing the
+  Windows-only `build_android.ps1`.
+- CI: every script parses, `targets.tsv` is well formed, and `launcher.json`'s
+  pinned commits match the submodules.
+
 ### Changed
+- Every build script skips recompiling `rom.c` when its object file is newer.
+- Xbox 360: the output is the XeLL-bootable `.elf32`; the `.xex` is only made
+  when `ELF2XEX` points at a converter (it was a private tool).
+- PS4: `OO_PS4_TOOLCHAIN` comes from the environment when set (the
+  `openorbisofficial/toolchain` image sets it).
 - Builds against [sp00nznet/LinksAwakening](https://github.com/sp00nznet/LinksAwakening)
   as a submodule (`LinksAwakening/`), which in turn pins
   [sp00nznet/gb-recompiled](https://github.com/sp00nznet/gb-recompiled). There

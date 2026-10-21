@@ -1,0 +1,20 @@
+# The installer for this commit (recomp-launcher with launcher/launcher.json),
+# for Windows, Linux and macOS: artifacts on every push to main, release files
+# on a v* tag. The installers contain no game code; they build from the
+# player's own ROM, in Docker, on their machine.
+name: installer
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    uses: sp00nznet/recomp-launcher/.github/workflows/installer.yml@main
+    with:
+      name: LinksAwakening-Consoles-Installer

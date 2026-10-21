@@ -1,0 +1,22 @@
+{
+  "title": "Link's Awakening DX: console builds",
+  "repo": "sp00nznet/linksawakening-portable",
+  "accent": "#3f9b4f",
+  "note": {
+    "default": "Builds Link's Awakening DX from your ROM for 13 consoles at once, all in Docker (it must be installed and running). Known to play: PS4 (hardware), PS3 (RPCS3), 3DS (emulator and hardware). Known to run: Wii, Android, the browser; Dreamcast boots but is slow. Builds but untested: GameCube, PS2, PSP, Vita, Xbox 360; the original Xbox hangs at boot. The first run downloads about 20 GB of toolchains and takes 1 to 2 hours; the builds land in builds/.",
+    "darwin": "Builds Link's Awakening DX from your ROM for 13 consoles at once, all in Docker Desktop (it must be installed and running). Known to play: PS4 (hardware), PS3 (RPCS3), 3DS (emulator and hardware). Known to run: Wii, Android, the browser; Dreamcast boots but is slow. Builds but untested: GameCube, PS2, PSP, Vita, Xbox 360; the original Xbox hangs at boot. The toolchains are x86 images: on Apple silicon they run emulated and take several hours. The builds land in builds/."
+  },
+  "game": {
+    "name": "Link's Awakening DX ROM",
+    "files": ["*.gbc|*.zip"]
+  },
+  "sources": [
+    { "repo": "sp00nznet/LinksAwakening", "ref": "58437d3e10d8876e45731eb3323547a80173ba8d", "dir": "linksawakening-portable/LinksAwakening" },
+    { "repo": "sp00nznet/gb-recompiled", "ref": "c50ca3c1bdebc36f156548e75a075932b2daa31d", "dir": "linksawakening-portable/LinksAwakening/gbrecomp" }
+  ],
+  "setup": {
+    "windows": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tools/setup.ps1", "-Yes", "-Game", "{game}"],
+    "default": ["bash", "setup.sh", "--yes", "--game-dir", "{game}"]
+  },
+  "play": "* (recomp).*"
+}

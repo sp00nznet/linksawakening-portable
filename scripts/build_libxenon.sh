@@ -20,7 +20,8 @@ DEVKITXENON="${DEVKITXENON:-/usr/local/xenon}"
 OUT="${1:-$HOME/la360-xenon}"
 
 XCC="$DEVKITXENON/bin/xenon-gcc"
-ELF2XEX="/mnt/c/xbox360nfs/tools/elf2xex"
+# Optional: an elf2xex for Xenia experiments. XeLL boots the .elf32.
+ELF2XEX="${ELF2XEX:-}"
 
 # -DGB_HAS_SDL2: rom_main.c's game-loop selector. The 360 has no SDL2 —
 #  platform_libxenon.c supplies every gb_platform_* symbol — but that macro
@@ -47,9 +48,11 @@ cc1 "$LA/rom_main.c" "rom_main.o"
 cc1 "$GEN/rom_rom.c"  "rom_rom.o"
 
 echo '[3/4] Recompiled game — rom.c (~105 MB, slow)'
+if fresh rom.o; then echo "  rom.o is up to date (skipping)"; OBJS+=("rom.o"); else
 cc1 "$GEN/rom.c" "rom.o"
+fi
 
-echo '[4/4] Link + elf2xex'
+echo '[4/4] Link (+ elf2xex when ELF2XEX is set)'
 # Bump the load addresses (Xenia/homebrew-friendlier) — same as the
 # libxenon test scripts.
 sed -e 's|0x80000000|0x82000000|' \
@@ -66,13 +69,14 @@ sed -e 's|0x80000000|0x82000000|' \
 
 "$DEVKITXENON/bin/xenon-objcopy" -O elf32-powerpc la360.elf la360.elf32
 "$DEVKITXENON/bin/xenon-strip" la360.elf32
-"$ELF2XEX" la360.elf32 la360.xex
+if [ -n "$ELF2XEX" ]; then "$ELF2XEX" la360.elf32 la360.xex; fi
 
 echo
 echo '=== output ==='
-ls -lh la360.elf32 la360.xex 2>/dev/null
+ls -lh la360.elf32 la360.xex 2>/dev/null || true  # the .xex is optional
 if [ -d "$ROOT/build-xenon" ]; then
     cp la360.elf32 la360.xex "$ROOT/build-xenon/" 2>/dev/null || true
+    cp la360.elf32 "$ROOT/build-xenon/linksawakening.elf32" 2>/dev/null || true
     cp la360.xex "$ROOT/build-xenon/linksawakening.xex" 2>/dev/null || true
-    echo "Copied to $ROOT/build-xenon/linksawakening.xex"
+    echo "Copied to $ROOT/build-xenon/"
 fi
