@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-20
+
 ### Added
 - One-step build of every console from your ROM, all in Docker: `Setup.cmd` /
   `tools/setup.ps1` on Windows, `setup.sh` on Linux and macOS. It turns the
