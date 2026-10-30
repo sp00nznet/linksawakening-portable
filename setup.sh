@@ -33,6 +33,7 @@ while IFS= read -r line; do
     [ -z "$ONLY" ] || [[ "$ONLY" == *",$t,"* ]] && TARGETS+=("$line")
 done < scripts/targets.tsv
 N=$((3 + ${#TARGETS[@]}))
+[ ${#TARGETS[@]} -gt 0 ] || { echo "Setup stopped: no known console in --targets $(echo $ONLY | tr , " " | xargs)."; exit 1; }
 
 step() { echo; echo "[$1/$N] $2"; }
 fail() { echo; echo "Setup stopped: $1"; echo "Details are in $ROOT/setup.log"; exit 1; }

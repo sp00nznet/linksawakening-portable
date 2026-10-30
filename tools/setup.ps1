@@ -26,6 +26,7 @@ $rows = @(Get-Content scripts\targets.tsv | Where-Object { $_ -and $_ -notmatch 
 } | Where-Object { $only.Count -eq 0 -or $only -contains $_.T })
 # $Total, not $N: PowerShell names ignore case, and Step's $n would shadow it.
 $Total = 3 + $rows.Count
+if ($rows.Count -eq 0) { Write-Host "Setup stopped: no known console in -Targets $Targets."; Stop-Transcript | Out-Null; exit 1 }
 
 function Step($n, $t) { Write-Host ''; Write-Host "[$n/$Total] $t" -ForegroundColor Cyan }
 function Fail($t) {
