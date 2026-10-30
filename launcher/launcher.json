@@ -3,8 +3,8 @@
   "repo": "sp00nznet/linksawakening-portable",
   "accent": "#3f9b4f",
   "note": {
-    "default": "Builds Link's Awakening DX from your ROM for 13 consoles at once, all in Docker (it must be installed and running). Known to play: PS4 (hardware), PS3 (RPCS3), 3DS (emulator and hardware). Known to run: Wii, Android, the browser; Dreamcast boots but is slow. Builds but untested: GameCube, PS2, PSP, Vita, Xbox 360; the original Xbox hangs at boot. The first run downloads about 20 GB of toolchains and takes 1 to 2 hours; the builds land in builds/.",
-    "darwin": "Builds Link's Awakening DX from your ROM for 13 consoles at once, all in Docker Desktop (it must be installed and running). Known to play: PS4 (hardware), PS3 (RPCS3), 3DS (emulator and hardware). Known to run: Wii, Android, the browser; Dreamcast boots but is slow. Builds but untested: GameCube, PS2, PSP, Vita, Xbox 360; the original Xbox hangs at boot. The toolchains are x86 images: on Apple silicon they run emulated and take several hours. The builds land in builds/."
+    "default": "Builds Link's Awakening DX from your ROM for the consoles you tick (up to 13), all in Docker (it must be installed and running). Known to play: PS4 (hardware), PS3 (RPCS3), 3DS (emulator and hardware). Known to run: Wii, Android, the browser; Dreamcast boots but is slow. Builds but untested: GameCube, PS2, PSP, Vita, Xbox 360; the original Xbox hangs at boot. The first run downloads only the ticked consoles' toolchains (about 20 GB for all 13, 1 to 2 hours); the builds land in builds/.",
+    "darwin": "Builds Link's Awakening DX from your ROM for the consoles you tick (up to 13), all in Docker Desktop (it must be installed and running). Known to play: PS4 (hardware), PS3 (RPCS3), 3DS (emulator and hardware). Known to run: Wii, Android, the browser; Dreamcast boots but is slow. Builds but untested: GameCube, PS2, PSP, Vita, Xbox 360; the original Xbox hangs at boot. The toolchains are x86 images: on Apple silicon they run emulated and take several hours. The builds land in builds/."
   },
   "game": {
     "name": "Link's Awakening DX ROM",
@@ -15,8 +15,23 @@
     { "repo": "sp00nznet/gb-recompiled", "ref": "c50ca3c1bdebc36f156548e75a075932b2daa31d", "dir": "linksawakening-portable/LinksAwakening/gbrecomp" }
   ],
   "setup": {
-    "windows": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tools/setup.ps1", "-Yes", "-Game", "{game}"],
-    "default": ["bash", "setup.sh", "--yes", "--game-dir", "{game}"]
+    "windows": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tools/setup.ps1", "-Yes", "-Game", "{game}", "-Targets", "{choices}"],
+    "default": ["bash", "setup.sh", "--yes", "--game-dir", "{game}", "--targets", "{choices}"]
   },
+  "choices": [
+    { "id": "wii", "label": "Wii", "note": "Runs in Dolphin · Docker, ~0.7 GB" },
+    { "id": "gamecube", "label": "GameCube", "note": "Untested · Docker, ~0.7 GB (shared with Wii)" },
+    { "id": "3ds", "label": "3DS", "note": "Plays on emulator and hardware · Docker, ~0.5 GB" },
+    { "id": "ps4", "label": "PS4", "note": "Plays on hardware · Docker, ~0.3 GB" },
+    { "id": "ps3", "label": "PS3", "note": "Plays in RPCS3 · Docker, ~2.8 GB" },
+    { "id": "ps2", "label": "PS2", "note": "Untested · Docker, ~0.3 GB" },
+    { "id": "psp", "label": "PSP", "note": "Untested · Docker, ~0.2 GB" },
+    { "id": "vita", "label": "Vita", "note": "Untested · Docker, ~0.5 GB" },
+    { "id": "dreamcast", "label": "Dreamcast", "note": "Boots, slow · Docker, ~1 GB" },
+    { "id": "android", "label": "Android", "note": "Runs in emulator · Docker, ~6 GB" },
+    { "id": "wasm", "label": "Browser", "note": "Runs in a browser · Docker, ~0.8 GB" },
+    { "id": "xenon", "label": "Xbox 360", "note": "Untested, needs RGH/JTAG · Docker, ~1 GB" },
+    { "id": "xbox", "label": "Original Xbox", "note": "Hangs at boot · Docker, ~1 GB" }
+  ],
   "play": "* (recomp).*"
 }
