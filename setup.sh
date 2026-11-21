@@ -26,6 +26,14 @@ done
 mkdir -p build-logs
 exec > >(tee setup.log) 2>&1
 
+# Asked, not assumed: each console pulls its own toolchain image (1-5 GB).
+if [ -z "$ONLY" ] && [ $YES = 0 ]; then
+    echo "Consoles: $(grep -v '^#' scripts/targets.tsv | cut -f1 | tr '\n' ' ')"
+    read -r -p "Which to build (comma-separated, or 'all'): " ONLY
+    [ -n "$ONLY" ] || { echo "Nothing chosen."; exit 2; }
+    [ "$ONLY" = all ] && ONLY="" || ONLY=",${ONLY// /},"
+fi
+
 TARGETS=()
 while IFS= read -r line; do
     case "$line" in \#*|"") continue ;; esac

@@ -19,6 +19,13 @@ Set-Location $Root
 New-Item -ItemType Directory -Force build-logs, builds | Out-Null
 Start-Transcript -Path (Join-Path $Root 'setup.log') -Force | Out-Null
 
+# Asked, not assumed: each console pulls its own toolchain image (1-5 GB).
+if (-not $Targets -and -not $Yes) {
+    Write-Host ("Consoles: " + ((Get-Content scripts\targets.tsv | Where-Object { $_ -and $_ -notmatch '^#' } | ForEach-Object { ($_ -split "`t")[0] }) -join ' '))
+    $Targets = (Read-Host "Which to build (comma-separated, or 'all')") -replace ' ', ''
+    if (-not $Targets) { Write-Host 'Nothing chosen.'; Stop-Transcript | Out-Null; exit 2 }
+    if ($Targets -eq 'all') { $Targets = '' }
+}
 $only = @($Targets -split ',' | Where-Object { $_ })
 $rows = @(Get-Content scripts\targets.tsv | Where-Object { $_ -and $_ -notmatch '^#' } | ForEach-Object {
     $c = $_ -split "`t"

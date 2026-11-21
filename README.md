@@ -56,13 +56,14 @@ Multiplayer isn't part of these builds; it lives in
 
 ## Getting Started
 
-Every route builds all 13 consoles from your ROM inside Docker, so the only
+Every route builds the consoles you pick from your ROM inside Docker, so the only
 thing to install is Docker itself:
 [Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows
 and macOS, or [Docker Engine](https://docs.docker.com/engine/install/) on
-Linux. Start it before you begin. The first run downloads about 20 GB of
-toolchain images and takes 1 to 2 hours. A rerun skips everything already
-built.
+Linux. Start it before you begin. Each console downloads only its own
+toolchain image (1 to 5 GB) the first time and builds in 5 to 15 minutes;
+all 13 together are about 20 GB and 1 to 2 hours. A rerun skips everything
+already built.
 
 ### Installer (easiest)
 
@@ -73,7 +74,8 @@ built.
    (**More info**, **Run anyway**); on a Mac, open it once, then **Open Anyway**
    in System Settings → Privacy & Security.
 2. Choose the folder your ROM is in (the `.gbc`, or a `.zip` with it inside),
-   and press **Build**.
+   and press **Build**. The installer builds all 13; to pick, use the setup
+   script below.
 3. When it's done, **Console builds** opens the folder with one subfolder per
    console. `builds/README.txt` says which built and what's known to work.
 
@@ -96,7 +98,8 @@ setup script below with your ROM folder.
      `tools\setup.ps1 -Game <folder>`
    - Linux and macOS: `./setup.sh --game-dir <folder>`
 
-   Add `-Targets wii,psp` (`--targets wii,psp`) to build only some consoles.
+   It asks which consoles to build; `-Targets wii,psp` (`--targets wii,psp`)
+   answers up front, and `-Yes` (`--yes`) with no targets builds all of them.
 3. The builds are in `builds/<console>/`, with a summary in
    `builds/README.txt`. Each console's full log is in `build-logs/`.
 
