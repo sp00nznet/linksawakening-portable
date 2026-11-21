@@ -74,8 +74,7 @@ already built.
    (**More info**, **Run anyway**); on a Mac, open it once, then **Open Anyway**
    in System Settings → Privacy & Security.
 2. Choose the folder your ROM is in (the `.gbc`, or a `.zip` with it inside),
-   and press **Build**. The installer builds all 13; to pick, use the setup
-   script below.
+   tick the consoles you want, and press **Build**.
 3. When it's done, **Console builds** opens the folder with one subfolder per
    console. `builds/README.txt` says which built and what's known to work.
 
