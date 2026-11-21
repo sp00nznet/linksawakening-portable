@@ -12,8 +12,8 @@ the same house style (generated code is never committed).
 
 ## Status
 
-**v0.1.0.** Every target below builds from your ROM with one command (the
-installer, `Setup.cmd` or `setup.sh`), tested end to end on 2026-10-20. "Last seen
+**v0.2.1.** Every target below builds from your ROM with one command (the
+installer, `Setup.cmd` or `setup.sh`; pick the consoles you want), tested end to end on 2026-10-20. "Last seen
 running" is the most recent time someone actually ran that build; a target
 that has only been built says so.
 
