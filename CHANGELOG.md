@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-21
+
+### Changed
+- Run by hand, the setup asks which consoles to build and pulls only their
+  toolchains, instead of all 13 (#3). `--targets` / `-Targets` skips the
+  question; `--yes` / `-Yes` with no targets still builds everything.
+- README: download size and time are per console.
+
 ## [0.1.0] - 2026-10-20
 
 ### Added
